@@ -7,7 +7,6 @@ class Maturity:
     Attributes:
         __day_count_convention (str): The day count convention used for calculating maturity.
         __maturity_in_years (float): The maturity value in years.
-
     """
 
     def __init__(
@@ -20,12 +19,11 @@ class Maturity:
         """
         Initialize a Maturity object.
 
-        Args:
+        Inputs:
             maturity_in_years (float, optional): The maturity value in years. Defaults to None.
             begin_date (datetime, optional): The start date. Defaults to None.
             end_date (datetime, optional): The end date. Defaults to None.
             day_count_convention (str, optional): The day count convention. Defaults to None.
-
         """
         
         self.__day_count_convention = day_count_convention
@@ -45,7 +43,6 @@ class Maturity:
 
         Raises:
             Exception: If the day count convention is not recognized.
-
         """
         
         if self.__day_count_convention == "ACT/360":
@@ -61,7 +58,6 @@ class Maturity:
 
         Returns:
             float: The maturity value in years.
-
         """
 
         return self.__maturity_in_years
