@@ -14,7 +14,8 @@ class Maturity:
             maturity_in_years: float = None,
             begin_date: datetime = None,
             end_date: datetime = None,
-            day_count_convention: str = None,
+            day_count_convention: str = "ACT/360",
+            # "ACT/360" -> il faut en mettre un forcé sinon on va avoir une erreur inutile ? 
             ) -> None:
         """
         Initialize a Maturity object.
@@ -23,7 +24,7 @@ class Maturity:
             maturity_in_years (float, optional): The maturity value in years. Defaults to None.
             begin_date (datetime, optional): The start date. Defaults to None.
             end_date (datetime, optional): The end date. Defaults to None.
-            day_count_convention (str, optional): The day count convention. Defaults to None.
+            day_count_convention (str, optional): The day count convention. Defaults to "ACT/360".
         """
         
         self.__day_count_convention = day_count_convention

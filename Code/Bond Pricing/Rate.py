@@ -1,11 +1,7 @@
-from Maturity import Maturity
 from scipy import interpolate
 import math
 
-
-# To do : vérifier que les interpolations barycentric / krogh fonctionnent bien 
-    # => ajouté, pas dans l'exemple du cours
-    # je suis sûre qu'im manque un paramètres mais j'arrive pasà me concentrer pour savoir lequel mdr
+from maturity import Maturity
 
 
 class Rate:
@@ -51,39 +47,32 @@ class Rate:
         
         if self.__rate_curve is not None:            
             if self.__interpol_type in ["linear", "cubic"]:
+                if self.__interpol_type == "cubic" and len(rate_curve) < 4:
+                    raise Exception("Not enought information in rate curve")
                 self.__interpol = interpolate.interp1d(
-                    [
-                        mat.maturity()
-                        for mat in rate_curve.keys()
-                    ], 
-                    list(rate_curve.values()),
+                    x=[mat.maturity()for mat in rate_curve.keys()], 
+                    y=list(rate_curve.values()),
                     fill_value="extrapolate",
                     kind=self.__interpol_type
                 )
+                
             elif self.__interpol_type == "barycentric":
-                self.__interpol = interpolate.barycentric_interpolate(
-                    [
-                        mat.maturity()
-                        for mat in rate_curve.keys()
-                    ], 
-                    list(rate_curve.values())
+                self.__interpol = interpolate.BarycentricInterpolator(
+                    xi=[mat.maturity() for mat in rate_curve.keys()], 
+                    yi=list(rate_curve.values())
                 )
+            
             elif self.__interpol_type == "krogh":
-                self.__interpol = interpolate.krogh_interpolate(
-                    [
-                        mat.maturity()
-                        for mat in rate_curve.keys()
-                    ], 
-                    list(rate_curve.values())
+                self.__interpol = interpolate.KroghInterpolator(
+                    xi=[mat.maturity() for mat in rate_curve.keys()], 
+                    yi=list(rate_curve.values())
                 )
+                
             else:
                 raise Exception("Unknown interpolation type, should be linear, cubic, barycentric, or krogh.")
 
 
-    def rate( 
-        self,
-        maturity: Maturity
-        ) -> float:
+    def rate(self, maturity: Maturity) -> float:
         """
         Determine the rate based on the provided maturity.
 
@@ -99,11 +88,7 @@ class Rate:
         return float(self.__interpol(maturity.maturity()))
     
 
-    def discount_factor( 
-        self,
-        maturity: Maturity,
-        force_rate: float = None
-        ) -> float:
+    def discount_factor(self, maturity: Maturity, force_rate: float = None) -> float:
         """
         Calculate the discount factor based on the given maturity and optional rate.
 

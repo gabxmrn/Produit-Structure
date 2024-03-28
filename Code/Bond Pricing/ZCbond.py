@@ -1,5 +1,5 @@
-from Maturity import Maturity
-from Rate import Rate
+from maturity import Maturity
+from rate import Rate
 
 
 class ZcBond:
@@ -32,10 +32,7 @@ class ZcBond:
         self.__nominal = nominal
 
 
-    def price(
-            self,
-            force_rate: float = None
-            ) -> float:
+    def price(self, force_rate: float = None) -> float:
         """
         Calculate the price of the zero-coupon bond.
 
