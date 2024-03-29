@@ -2,9 +2,9 @@
 import numpy as np
 import pandas as pd
 
-from done.maturity import Maturity
+from maturity import Maturity
 from products import AbstractProduct, Call
-from done.rate import Rate
+from rate import Rate
 
 
 class GbmProcess:

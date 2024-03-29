@@ -1,6 +1,10 @@
 from WienerProcess import WienerProcess
 from done.maturity import Maturity
 
+# Je comprends pas ce que c'est ? 
+# WienerProcess = mouvement brownien mais on a deja une classe GMB ???? 
+
+
 maturity=Maturity(1.0)
 mvt=WienerProcess(
     drift=0,

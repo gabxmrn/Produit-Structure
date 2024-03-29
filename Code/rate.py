@@ -106,7 +106,7 @@ class Rate:
         else:
             rate = self.rate(maturity)
             
-        if self.__rate_type == "continous":
+        if self.__rate_type == "continuous":
             return math.exp(- rate * maturity.maturity())
         elif self.__rate_type == "compounded":
             return 1.0 / (1 + rate) ** maturity.maturity()

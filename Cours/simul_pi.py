@@ -1,6 +1,8 @@
 
 import numpy as np
 
+# Pourquoi simuler pi ???? 
+
 np.random.seed(272)
 n=10000
 z=np.random.random([2,n])

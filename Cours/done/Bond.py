@@ -1,7 +1,7 @@
-from done.maturity import Maturity
-from done.optim import Optim
-from done.ZcBond import ZcBond
-from done.rate import Rate
+from maturity import Maturity
+from optim import Optim
+from ZcBond import ZcBond
+from rate import Rate
 
 
 class FixedBond:

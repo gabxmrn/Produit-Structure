@@ -1,5 +1,5 @@
 import math
-from done.maturity import Maturity
+from maturity import Maturity
 from scipy import interpolate
  
 class Rate:

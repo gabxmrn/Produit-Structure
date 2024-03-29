@@ -4,7 +4,7 @@ from maturity import Maturity
 from rate import Rate
 from zcBond import ZcBond
 from bond import FixedBond
-from gbmProcess import GbmProcess
+from brownianMotion import BrownianMotion
 from products import AbstractProduct, Call, Put
 
 
@@ -37,7 +37,7 @@ print(f"YTM de l'obligation à taux fixe = {fixed_bond.ytm()}")
 
 
 #### Test Call/Put : 
-process = GbmProcess({
+process = BrownianMotion({
     "nb_simulations":1000,
     "nb_steps":1,
     "spot":100,
@@ -45,20 +45,30 @@ process = GbmProcess({
     "volatility":0.2,
     "maturity":Maturity(0.5)
 })
-call = Call({"strike":100})
-put = Put({"strike":100})
-print(process.pricing(call))
-print(process.pricing(put))
+call_product = Call({"strike":102})
+put_product = Put({"strike":102})
+call = process.pricing(call_product) 
+put = process.pricing(put_product)
+print(f" Call : Prix = {call['price']}, proba d'exercice = {call['proba']}, Payoff = {call_product.payoff(call['price'])}")
+print(f" Put : Prix = {put['price']}, proba d'exercice = {put['proba']}, Payoff = {put_product.payoff(put['price'])}")
     
     
 """
     Résumé : 
-        - Maturity : OK
-        - Rate : OK
-        - ZcBond : OK
-        - FixedBond (Bond) : OK
-        - Optim : OK
-        - Option : je comprends rien 
-    PS : les obligations à taux flottant sont pas à faire ? 
-    Il y a marqué que du taux fixe dans l'énoncé du projet 
+        - maturity : OK
+        - rate : OK
+        
+            ### Obligations : ###
+        - zcBond : OK
+        - bond : OK
+        - optim : OK
+        
+            ### Options : ###
+        - brownianMotion : OK
+        - products : fonctionne mais pas complet 
+        
+    PS : 
+    - Les obligations à taux flottant sont pas à faire (il y a marqué que du taux fixe dans l'énoncé du projet) 
+    
+    
 """

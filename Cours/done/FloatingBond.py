@@ -1,6 +1,6 @@
-from done.maturity import Maturity
-from done.Bond import FixedBond
-from done.rate import Rate
+from maturity import Maturity
+from Bond import FixedBond
+from rate import Rate
 
 
 class FloatingBond:
