@@ -3,7 +3,7 @@ from rate import Rate
 from optim import Optim
 from zcBond import ZcBond
 
-# faire les obligations à taux variable
+# TO DO : rajouter une méthode pour calculer la sensibilité / la duration de l'obligation
 
 class FixedBond:
     """

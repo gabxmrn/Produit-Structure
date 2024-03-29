@@ -39,7 +39,7 @@ class Rate:
         
         self.__rate = rate
         self.__rate_curve = rate_curve
-        self.__interpol_type = interpol_type
+        self.__interpol_type = interpol_type.lower()
         
         if rate_type not in ["continuous", "compounded"]:
             raise Exception("Unknown rate type, should be continuous or compounded.")
