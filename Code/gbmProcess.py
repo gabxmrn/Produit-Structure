@@ -2,9 +2,11 @@
 import numpy as np
 import pandas as pd
 
-from done.maturity import Maturity
-from products import AbstractProduct, Call
-from done.rate import Rate
+from maturity import Maturity
+from rate import Rate
+from products import AbstractProduct
+
+# GBM Process ???? 
 
 
 class GbmProcess:
@@ -38,11 +40,17 @@ class GbmProcess:
     def __generate_price(self):
         self._generate_z()
         if self._prices==None:
-            spot=self._input("spot")
-            rates=self._input("rates")
-            maturity=self._input("maturity")
-            discount_factor=rates.discount_factor(maturity)
-            rate=-np.log(discount_factor)/maturity.maturity()
+            spot = self._input("spot")
+            print(f"spot = {spot}")
+            maturity = self._input("maturity")
+            print(f"maturity = {maturity.maturity()}")
+            
+            rates = self._input("rates")
+            print(f"rate = {rates.rate()}")
+            discount_factor = rates.discount_factor(maturity)
+            # print(discount_factor)
+            
+            rate = -np.log(discount_factor)/maturity.maturity()
             volatility=self._input("volatility")
             nb_steps=self._input("nb_steps")
             dt=maturity.maturity()/nb_steps
@@ -76,16 +84,4 @@ class GbmProcess:
             "price":c0,
             "prob":(ct > 0).sum()/len(ct)
         }
-        
-
-call=Call({"strike":100})
-process=GbmProcess({
-    "nb_simulations":1000,
-    "nb_steps":1,
-    "spot":100,
-    "rates":Rate(0.03, rate_type="continous"),
-    "volatility":0.2,
-    "maturity":Maturity(0.5)
-})
-print(process.pricing(call))
             

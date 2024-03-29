@@ -1,7 +1,5 @@
 from WienerProcess import WienerProcess
-from maturity import Maturity
-
-
+from done.maturity import Maturity
 
 maturity=Maturity(1.0)
 mvt=WienerProcess(
@@ -12,8 +10,11 @@ mvt=WienerProcess(
     nb_steps=250, 
     seed=272
 )
+print("Cumulative simulation : ")
 print(mvt.cumulative_simulation())
+print("Return simulation : ")
 print(mvt.return_simulation(True))
 #mvt.get_chart([0,1,2])
+print("Confidence interval : ")
 print(mvt.confidence_interval(0.9, [1,2,3]))
 a=0

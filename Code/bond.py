@@ -1,6 +1,6 @@
 from maturity import Maturity
 from rate import Rate
-from Optim import Optim
+from optim import Optim
 from zcBond import ZcBond
 
 # faire les obligations à taux variable
