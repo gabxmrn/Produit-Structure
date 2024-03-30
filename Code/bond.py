@@ -3,6 +3,8 @@ from rate import Rate
 from optim import Optim
 from zcBond import ZcBond
 
+from math import exp 
+
 # TO DO : rajouter une méthode pour calculer la sensibilité / la duration de l'obligation
 
 class FixedBond:
@@ -93,6 +95,46 @@ class FixedBond:
             self.__ytm = opt_res["x"][0]
             
         return self.__ytm
+    
+    
+    def duration(self, force_rate:float=None):
+        # Vraiment pas sure de la formule 
+        
+        m = self.__maturity.maturity() / self.__nb_coupon 
+        c = self.__coupon
+        r_ytm = self.ytm()
+        FV = self.__nominal
+        N = self.__nb_coupon
+        coupon_list = self.__run_coupon()
+        
+        denominator = 0
+        
+        for coupon_t in coupon_list :
+            t = coupon_t["maturity"]
+            coupon = coupon_t["zc_bond"].price(force_rate=force_rate)
+            denominator += coupon / m * exp(-r_ytm / m * t) * t * FV * exp(- r_ytm / m * N) * t
+        
+        return denominator / self.price()
+    
+    def convexite(self, force_rate:float=None):
+        # Vraiment pas sure de la formule 
+        
+        m = self.__maturity.maturity() / self.__nb_coupon 
+        c = self.__coupon
+        r_ytm = self.ytm()
+        FV = self.__nominal
+        N = self.__nb_coupon
+        coupon_list = self.__run_coupon()
+        
+        denominator = 0
+        
+        for coupon_t in coupon_list :
+            t = coupon_t["maturity"]
+            coupon = coupon_t["zc_bond"].price(force_rate=force_rate)
+            denominator += coupon / m * exp(-r_ytm / m * t) * t**2 * FV * exp(- r_ytm / m * N) * t**2
+        
+        return denominator 
+    
 
 
     def  __run_coupon(self):

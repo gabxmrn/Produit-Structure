@@ -19,7 +19,7 @@ class Rate:
     def __init__(
             self,
             rate: float = None,
-            rate_type: str = None,
+            rate_type: str = "continuous",
             rate_curve: dict = None,
             interpol_type: str = None
             ) -> None:
@@ -28,7 +28,7 @@ class Rate:
 
         Args:
             rate (float, optional): The rate value. Defaults to None.
-            rate_type (str, optional): The type of rate (continuous or compounded). Defaults to None.
+            rate_type (str, optional): The type of rate (continuous or compounded). Defaults to continuous.
             rate_curve (dict, optional): The rate curve. Defaults to None.
             interpol_type (str, optional): The type of interpolation used. Defaults to None.
 
@@ -39,11 +39,12 @@ class Rate:
         
         self.__rate = rate
         self.__rate_curve = rate_curve
-        self.__interpol_type = interpol_type.lower()
         
         if rate_type not in ["continuous", "compounded"]:
             raise Exception("Unknown rate type, should be continuous or compounded.")
-        self.__rate_type = rate_type
+        self.__rate_type = rate_type.lower()
+        if interpol_type is not None : 
+            self.__interpol_type = interpol_type.lower()
         
         if self.__rate_curve is not None:            
             if self.__interpol_type in ["linear", "cubic"]:
