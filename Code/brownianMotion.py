@@ -19,7 +19,7 @@ class BrownianMotion:
 
     """
     
-    def __init__(self, inputs):
+    def __init__(self, inputs:dict, optional_inputs:dict=None):
         """
         Initialize a BrownianMotion object.
 
@@ -28,6 +28,7 @@ class BrownianMotion:
         """
         
         self._inputs = inputs
+        self._optional_inputs = optional_inputs
         self._z = None
         self._prices = None
     
@@ -48,6 +49,12 @@ class BrownianMotion:
         if code in self._inputs:
             return self._inputs[code]
         raise Exception("Missing inputs : " + code)
+    
+    def _optional_input(self, code):
+        if code in self._optional_inputs:
+            return self._optional_inputs[code]
+        else :
+            return None
     
     def _generate_z(self):
         """
@@ -77,10 +84,23 @@ class BrownianMotion:
             spot = self._input("spot")
             maturity = self._input("maturity")         
             rates = self._input("rates")
-            discount_factor = rates.discount_factor(maturity)
-            rate = -np.log(discount_factor) / maturity.maturity()
             volatility = self._input("volatility")
             nb_steps = self._input("nb_steps")
+            discount_factor = rates.discount_factor(maturity)
+            rate = -np.log(discount_factor) / maturity.maturity()
+            
+            if not self._optional_inputs is None :
+                # Option sur action : 
+                if not self._optional_input("dividend") is None :
+                    if self._optional_input("dividend_date") is None :
+                        spot = spot * np.exp(-self._optional_input("dividend") * maturity.maturity())
+                        rate = rate - self._optional_input("dividend")
+                    else :
+                        spot = spot - self._optional_input("dividend") * np.exp(-rate * self._optional_input("dividend_date"))
+                # Option sur taux de change : 
+                if not self._optional_input("forward_rate") is None :
+                    spot = spot * np.exp(-self._optional_input("forward_rate") * maturity.maturity())
+
             dt = maturity.maturity()/nb_steps
             z = self._z
             drift_dt = (rate - 0.5 * volatility ** 2) * dt # Constante

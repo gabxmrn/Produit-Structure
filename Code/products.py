@@ -12,12 +12,14 @@ class AbstractProduct:
     _product_name = "product"
     _inputs = None
 
-    def __init__(self, inputs):
+    def __init__(self, inputs:dict, optional_inputs:dict = None):
         """ 
         Initialize an AbstractProduct object.
         Args: inputs (dict): Input parameters for the product.
         """
         self._inputs = inputs
+        self._optional_inputs = optional_inputs
+        
 
     def payoff(self, spot):
         """
@@ -50,7 +52,11 @@ class Call(AbstractProduct):
         Returns:
             float: Strike price.
         """
-        return self._inputs.get("strike")
+        # Option sur taux de change 
+        if not self._optional_inputs is None and not self._optional_inputs("domestic_rate") is None :
+            return self._inputs.get("strike") * np.exp(-self._optional_inputs("domestic_rate") * self._optional_inputs("maturity").maturity())
+        else : 
+            return self._inputs.get("strike")
 
     def payoff(self, spot):
         """
@@ -80,7 +86,11 @@ class Put(AbstractProduct):
         Returns:
             float: Strike price.
         """
-        return self._inputs.get("strike")
+        # Option sur taux de change 
+        if not self._optional_inputs is None and not self._optional_inputs("domestic_rate") is None :
+            return self._inputs.get("strike") * np.exp(-self._optional_inputs("domestic_rate") * self._inputs("maturity").maturity())
+        else : 
+            return self._inputs.get("strike")
 
     def payoff(self, spot):
         """
