@@ -61,7 +61,6 @@ class BrownianMotion:
         Generate random component of the process.
 
         """
-        
         if self._z is None:
             nb_simulations = self._input("nb_simulations")
             nb_steps = self._input("nb_steps")
@@ -73,6 +72,9 @@ class BrownianMotion:
             z = pd.DataFrame(z, columns=col)
             z.insert(0, 0, 0)
             self._z = z
+        else:
+            z = self._z
+        return z
     
     def __generate_price(self):
         """
@@ -127,10 +129,10 @@ class BrownianMotion:
             dict: Dictionary containing the calculated price and probability.
         """
         if monte_carlo:
-            # Generate paths and calculate price using Monte Carlo simulation
             paths = self._generate_paths()
             payoffs = product.payoff(paths)
-            discount_factor = self._inputs('rates').discount_factor(Maturity(self._inputs('maturity')))
+            maturity = self._inputs['maturity']
+            discount_factor = self._inputs['rates'].discount_factor(maturity)
             price = np.mean(payoffs) * discount_factor
             proba = np.mean(payoffs > 0)
             return {"price": price, "proba": proba}
@@ -150,22 +152,40 @@ class BrownianMotion:
                 
 
     def _generate_paths(self):
-        nb_simulations = self._inputs('nb_simulations')
-        nb_steps = self._inputs('nb_steps')
-        maturity = self._inputs('maturity')
+        """
+    Generates asset price paths using the Geometric Brownian Motion model.
+    Parameters:
+        None - All necessary parameters are assumed to be available in `self._inputs`.
+
+    Returns:
+        None - The generated price paths are stored directly in `self._prices`.
+    
+    Raises:
+        KeyError: If an expected key is missing from `self._inputs`.
+        ValueError: If any of the numerical inputs are non-positive or otherwise invalid.
+    
+    Notes:
+        - The simulation assumes a constant risk-free rate over the time to maturity.
+        - Volatility is also assumed to be constant over the simulation period.
+        - The number of steps determines the granularity of the simulation; more steps
+          result in finer granularity but require more computational resources.
+    
+    """
+        nb_simulations = self._inputs['nb_simulations']
+        nb_steps = self._inputs['nb_steps']
+        maturity = self._inputs['maturity'].maturity()
         dt = maturity / nb_steps
-        volatility = self._inputs('volatility')
-        initial_spot = self._inputs('spot')
-        rate = self._inputs('rates')  # Assuming a constant rate
+        volatility = self._inputs['volatility']
+        initial_spot = self._inputs['spot']
+        rate = self._inputs['rates'].rate(maturity)   # Assuming a constant rate
 
-        np.random.seed(272) 
-        z = np.random.normal(0, 1, (nb_simulations, nb_steps)) * np.sqrt(dt)
-
-        # Calculate price paths
+        z = self._generate_z().to_numpy()
+        
         price_paths = np.zeros((nb_simulations, nb_steps + 1))
         price_paths[:, 0] = initial_spot
-
+        
         for t in range(1, nb_steps + 1):
             price_paths[:, t] = price_paths[:, t-1] * np.exp((rate - 0.5 * volatility**2) * dt + volatility * z[:, t-1])
 
         self._prices = price_paths
+        return self._prices
