@@ -26,7 +26,7 @@ class BrownianMotion:
         Args:
             inputs (dict): A dictionary containing input parameters required for the process.
         """
-        
+    
         self._inputs = inputs
         self._optional_inputs = optional_inputs
         self._z = None
@@ -116,7 +116,7 @@ class BrownianMotion:
             
             self._prices = st
         
-    def pricing(self, product:AbstractProduct):
+    def pricing(self, product:AbstractProduct, monte_carlo=False):
         """
         Calculate the price of a financial product based on the simulated prices.
 
@@ -126,17 +126,46 @@ class BrownianMotion:
         Returns:
             dict: Dictionary containing the calculated price and probability.
         """
-        
-        self.__generate_price()
-        st = self._prices
-        last_values = st[st.columns[-1]]
-        ct = product.payoff(last_values)
-        rates = self._input("rates")
-        maturity = self._input("maturity")
-        c0 = rates.discount_factor(maturity) \
-             * np.sum(ct)/len(ct)
-        
-        self._z = None
-        
-        return {"price":c0, "proba":(ct > 0).sum()/len(ct)}
+        if monte_carlo:
+            # Generate paths and calculate price using Monte Carlo simulation
+            paths = self._generate_paths()
+            payoffs = product.payoff(paths)
+            discount_factor = self._inputs('rates').discount_factor(Maturity(self._inputs('maturity')))
+            price = np.mean(payoffs) * discount_factor
+            proba = np.mean(payoffs > 0)
+            return {"price": price, "proba": proba}
+        else:
+            self.__generate_price()
+            st = self._prices
+            last_values = st[st.columns[-1]]
+            ct = product.payoff(last_values)
+            rates = self._input("rates")
+            maturity = self._input("maturity")
+            c0 = rates.discount_factor(maturity) \
+                * np.sum(ct)/len(ct)
             
+            self._z = None
+            
+            return {"price":c0, "proba":(ct > 0).sum()/len(ct)}
+                
+
+    def _generate_paths(self):
+        nb_simulations = self._inputs('nb_simulations')
+        nb_steps = self._inputs('nb_steps')
+        maturity = self._inputs('maturity')
+        dt = maturity / nb_steps
+        volatility = self._inputs('volatility')
+        initial_spot = self._inputs('spot')
+        rate = self._inputs('rates')  # Assuming a constant rate
+
+        np.random.seed(272) 
+        z = np.random.normal(0, 1, (nb_simulations, nb_steps)) * np.sqrt(dt)
+
+        # Calculate price paths
+        price_paths = np.zeros((nb_simulations, nb_steps + 1))
+        price_paths[:, 0] = initial_spot
+
+        for t in range(1, nb_steps + 1):
+            price_paths[:, t] = price_paths[:, t-1] * np.exp((rate - 0.5 * volatility**2) * dt + volatility * z[:, t-1])
+
+        self._prices = price_paths

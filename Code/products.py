@@ -103,3 +103,34 @@ class Put(AbstractProduct):
             float: Payoff of the Put option.
         """
         return np.maximum(self._strike() - spot, 0)
+
+
+class KnockOutOption(AbstractProduct):
+    def __init__(self, inputs):
+        """ A class representing a KO option financial product. """
+        super().__init__(inputs)
+        self.barrier = inputs['barrier']
+        self.strike = inputs['strike']
+    
+    def payoff(self, paths):
+        # This method calculates the payoff considering the barrier. 'paths' is a NumPy array of simulated end prices
+        payoffs = np.maximum(paths - self.strike, 0)  
+        knock_out_mask = np.any(paths >= self.barrier, axis=1)
+        payoffs[knock_out_mask] = 0
+        return payoffs
+
+
+
+class KnockInOption(AbstractProduct):
+    def __init__(self, inputs):
+        """ A class representing a KI option financial product. """
+        super().__init__(inputs)
+        self.barrier = inputs['barrier']
+        self.strike = inputs['strike']
+
+    def payoff(self, paths):
+        # For KI options, the option is only valid if the barrier is breached
+        payoffs = np.maximum(paths[:, -1] - self.strike, 0)  
+        knock_in_mask = np.any(paths >= self.barrier, axis=1)
+        payoffs[~knock_in_mask] = 0 
+        return payoffs
