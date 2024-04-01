@@ -6,7 +6,7 @@ from bond import FixedBond, ZcBond
 from brownianMotion import BrownianMotion
 from products import VanillaOption, KnockInOption, KnockOutOption
 
-from riskAnalysis import Risk
+from riskAnalysis import BondRisk, OptionRisk
 
 
 #### Test Maturity : 
@@ -36,7 +36,7 @@ print(f"Prix zero coupon = {zc_bond.price()}")
 fixed_bond = FixedBond(coupon_rate=0.1, maturity=maturity, nominal=100, nb_coupon=22, rate=rate)
 print(f"Prix de l'obligation à taux fixe = {fixed_bond.price()}")
 print(f"YTM de l'obligation à taux fixe = {fixed_bond.ytm()}")
-bond_risk = Risk(bond=fixed_bond)
+bond_risk = BondRisk(bond=fixed_bond)
 print(f"Duration de l'obligation à taux fixe = {bond_risk.duration()}")
 print(f"Convexité de l'obligation à taux fixe = {bond_risk.convexite()}")
 
@@ -58,22 +58,26 @@ call = process.pricing(call_product)
 put = process.pricing(put_product)
 print(f"Call : Prix = {call['price']}, proba d'exercice = {call['proba']}, Payoff = {call_product.payoff(call['price'])}")
 print(f"Put : Prix = {put['price']}, proba d'exercice = {put['proba']}, Payoff = {put_product.payoff(put['price'])}")
-delta = Risk().delta(call_product, process)
-print(f"Delta call = {delta}")
+greeks_call = OptionRisk(call_product, process)
+print(f"Call -> Delta = {greeks_call.delta()}, Gamma = {greeks_call.gamma()}, Vega = {greeks_call.vega()}, theta = {greeks_call.theta()}, rho = {greeks_call.rho()}")
+greeks_put = OptionRisk(put_product, process)
+print(f"Put -> Delta = {greeks_put.delta()}, Gamma = {greeks_put.gamma()}, Vega = {greeks_put.vega()}, theta = {greeks_put.theta()}, rho = {greeks_put.rho()}")
 
 print("           ")
 
 process_share = BrownianMotion({
     "nb_simulations":1000,
-    "nb_steps":1000,
+    "nb_steps":50,
     "spot":100,
     "rates":Rate(0.03, rate_type="continuous"),
     "volatility":0.2,
     "maturity":Maturity(0.5),
-}, {"dividend":0.1})
+}, {"dividend":0.01})
 call_share = VanillaOption({"option_type":"call", "strike":102})
 call_2 = process_share.pricing(call_share) 
 print(f"Call sur action : Prix = {call_2['price']}, proba d'exercice = {call_2['proba']}, Payoff = {call_share.payoff(call['price'])}")
+greeks_share = OptionRisk(call_share, process_share)
+print(f"Delta = {greeks_share.delta()}, Gamma = {greeks_share.gamma()}, Vega = {greeks_share.vega()}, theta = {greeks_share.theta()}, rho = {greeks_share.rho()}")
 process_fx = BrownianMotion({
     "nb_simulations":1000,
     "nb_steps":1000,
@@ -86,6 +90,8 @@ process_fx = BrownianMotion({
 put_fx = VanillaOption({"option_type":"put", "strike":102})
 put_2 = process_fx.pricing(put_fx) 
 print(f"Put sur Forex : Prix = {put_2['price']}, proba d'exercice = {put_2['proba']}, Payoff = {put_fx.payoff(call['price'])}")
+greeks_fx = OptionRisk(put_fx, process_fx)
+print(f"Delta = {greeks_fx.delta()}, Gamma = {greeks_fx.gamma()}, Vega = {greeks_fx.vega()}, theta = {greeks_fx.theta()}, rho = {greeks_fx.rho()}")
 
 print("           ")
 
@@ -115,11 +121,11 @@ print(f"KI Option : Prix = {KI_option['price']}, proba d'exercice = {KI_option['
         
         
     Caro : 
-    - j'ai tenter de rajouter la duration dans la classe bond mais vraiment pas sure de la formule (et des résultats) ??
-    - pareil pour la convexite de l'obligation
+    - j'ai tenter de rajouter la duration + convexité mais vraiment pas sure de la formule (et des résultats) ??
     - on a une erreur quand maturité trop longue (problème de discount factor)
     - option sur action et tx de change fait (d'après le cours), pour les indices je sais pas encore quoi changer 
     la méthode est pas forcément optimale (et le code pas encore commenté), dites moi si vous voyez des améliorations à faire :) 
-    
+    - A verifier : formule prix (pas le meme que sur pricer google...) + spot avec dividende et fx !!
+    + commenter les nouveaux codes 
     
 """

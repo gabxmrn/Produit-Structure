@@ -61,9 +61,11 @@ class BrownianMotion:
                 
          # Option sur action : 
         if "dividend" in self._optional_inputs : 
+            ########## PROBLEME ICI !!!!
             if "dividend_date" in self._optional_inputs :
                 spot -= self._optional_inputs["dividend"] * np.exp(-rate * self._optional_inputs["dividend_date"])
             else :
+                # print(f"div = {np.exp(-self._optional_inputs['dividend'] * self.input('maturity').maturity())}")
                 spot *= np.exp(-self._optional_inputs["dividend"] * self.input("maturity").maturity())
                 rate -= self._optional_inputs["dividend"]
                 
@@ -120,7 +122,7 @@ class BrownianMotion:
             rdt = drift_dt + motion
             
             rdt[0] = 0 # Exception here
-            
+        
             log_spot = np.log(spot)
             log_st = log_spot + np.cumsum(rdt, axis=1)
             st = np.exp(log_st)
