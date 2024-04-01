@@ -2,10 +2,11 @@ from datetime import datetime
 
 from maturity import Maturity 
 from rate import Rate
-from zcBond import ZcBond
-from bond import FixedBond
+from bond import FixedBond, ZcBond
 from brownianMotion import BrownianMotion
-from products import AbstractProduct, Call, Put, KnockInOption, KnockOutOption
+from products import VanillaOption, KnockInOption, KnockOutOption
+
+from riskAnalysis import Risk
 
 
 #### Test Maturity : 
@@ -35,59 +36,15 @@ print(f"Prix zero coupon = {zc_bond.price()}")
 fixed_bond = FixedBond(coupon_rate=0.1, maturity=maturity, nominal=100, nb_coupon=22, rate=rate)
 print(f"Prix de l'obligation à taux fixe = {fixed_bond.price()}")
 print(f"YTM de l'obligation à taux fixe = {fixed_bond.ytm()}")
-print(f"Duration de l'obligation à taux fixe = {fixed_bond.duration()}")
-print(f"Convexité de l'obligation à taux fixe = {fixed_bond.convexite()}")
+bond_risk = Risk(bond=fixed_bond)
+print(f"Duration de l'obligation à taux fixe = {bond_risk.duration()}")
+print(f"Convexité de l'obligation à taux fixe = {bond_risk.convexite()}")
 
 print("           ")
 
-#### Test Call/Put : 
-# process = BrownianMotion({
-#     "nb_simulations":1000,
-#     "nb_steps":1,
-#     "spot":100,
-#     "rates":Rate(0.03, rate_type="continuous"),
-#     "volatility":0.2,
-#     "maturity":Maturity(0.5)
-# })
+#### Test Options Vanilles : 
 
-# call_product = Call({"strike":102})
-# put_product = Put({"strike":102})
-# call = process.pricing(call_product) 
-# put = process.pricing(put_product)
-# print(f"Call : Prix = {call['price']}, proba d'exercice = {call['proba']}, Payoff = {call_product.payoff(call['price'])}")
-# print(f"Put : Prix = {put['price']}, proba d'exercice = {put['proba']}, Payoff = {put_product.payoff(put['price'])}")
-
-# # Option sur action : 
-# process_share = BrownianMotion({
-#     "nb_simulations":1000,
-#     "nb_steps":1,
-#     "spot":100,
-#     "rates":Rate(0.03, rate_type="continuous"),
-#     "volatility":0.2,
-#     "maturity":Maturity(0.5),
-# }, 
-#     {"dividend":0.1})
-# call_share = Call({"strike":102})
-# call_2 = process_share.pricing(call_share) 
-# print(f"Call sur action : Prix = {call_2['price']}, proba d'exercice = {call_2['proba']}, Payoff = {call_share.payoff(call['price'])}")
-
-# # Option sur taux de change : 
-# process_fx = BrownianMotion({
-#     "nb_simulations":1000,
-#     "nb_steps":1,
-#     "spot":100,
-#     "rates":Rate(0.03, rate_type="continuous"),
-#     "volatility":0.2,
-#     "maturity":Maturity(0.5),
-# }, 
-#     {"forward_rate":0.2, 
-#     "domestic_rate":0.1})
-# put_fx = Put({"strike":102})
-# put_2 =process_fx.pricing(put_fx) 
-# print(f"Put sur Forex : Prix = {put_2['price']}, proba d'exercice = {put_2['proba']}, Payoff = {put_fx.payoff(call['price'])}")
-
-    
-process_barrier = BrownianMotion({
+process = BrownianMotion({
     "nb_simulations":1000,
     "nb_steps":1000,
     "spot":100,
@@ -95,18 +52,53 @@ process_barrier = BrownianMotion({
     "volatility":0.2,
     "maturity":Maturity(0.5)
 })
+call_product = VanillaOption({"option_type":"call", "strike":102})
+put_product = VanillaOption({"option_type":"put", "strike":102})
+call = process.pricing(call_product) 
+put = process.pricing(put_product)
+print(f"Call : Prix = {call['price']}, proba d'exercice = {call['proba']}, Payoff = {call_product.payoff(call['price'])}")
+print(f"Put : Prix = {put['price']}, proba d'exercice = {put['proba']}, Payoff = {put_product.payoff(put['price'])}")
+delta = Risk().delta(call_product, process)
+print(f"Delta call = {delta}")
 
-barrierKO= KnockOutOption({"barrier":120, 
-                          "strike":100})
+print("           ")
 
-KO_option = process_barrier.pricing(barrierKO, monte_carlo=True)
-print(KO_option)
+process_share = BrownianMotion({
+    "nb_simulations":1000,
+    "nb_steps":1000,
+    "spot":100,
+    "rates":Rate(0.03, rate_type="continuous"),
+    "volatility":0.2,
+    "maturity":Maturity(0.5),
+}, {"dividend":0.1})
+call_share = VanillaOption({"option_type":"call", "strike":102})
+call_2 = process_share.pricing(call_share) 
+print(f"Call sur action : Prix = {call_2['price']}, proba d'exercice = {call_2['proba']}, Payoff = {call_share.payoff(call['price'])}")
+process_fx = BrownianMotion({
+    "nb_simulations":1000,
+    "nb_steps":1000,
+    "spot":100,
+    "rates":Rate(0.03, rate_type="continuous"),
+    "volatility":0.2,
+    "maturity":Maturity(0.5),
+}, {"forward_rate":0.2, 
+    "domestic_rate":0.1})
+put_fx = VanillaOption({"option_type":"put", "strike":102})
+put_2 = process_fx.pricing(put_fx) 
+print(f"Put sur Forex : Prix = {put_2['price']}, proba d'exercice = {put_2['proba']}, Payoff = {put_fx.payoff(call['price'])}")
+
+print("           ")
+
+# Option sur taux de change :
+barrierKO= KnockOutOption({"barrier":120, "strike":100})
+KO_option = process.pricing(barrierKO, monte_carlo=True)
+print(f"KO Option : Prix = {KO_option['price']}, proba d'exercice = {KO_option['proba']}")
+barrierKI= KnockInOption({"barrier":120, "strike":100})
+KI_option = process.pricing(barrierKI, monte_carlo=True)
+print(f"KI Option : Prix = {KI_option['price']}, proba d'exercice = {KI_option['proba']}")
 
 
-barrierKI= KnockInOption({"barrier":120, 
-                          "strike":100})
-KI_option = process_barrier.pricing(barrierKI, monte_carlo=True)
-print(KI_option)
+
 """
     Résumé : 
         - maturity : OK

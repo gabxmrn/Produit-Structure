@@ -14,6 +14,7 @@ class BrownianMotion:
 
     Attributes:
         _inputs (dict): A dictionary containing input parameters required for the process.
+        _optional_inputs (dict): A dictionary containing input parameters optional for the process. Default to None.
         _z (pd.DataFrame): DataFrame containing the random component of the process.
         _prices (np.array): Array containing simulated prices of the underlying asset.
 
@@ -25,6 +26,7 @@ class BrownianMotion:
 
         Args:
             inputs (dict): A dictionary containing input parameters required for the process.
+            optional_inputs (dict): A dictionary containing input parameters optional for the process. Default to None.
         """
     
         self._inputs = inputs
@@ -32,7 +34,7 @@ class BrownianMotion:
         self._z = None
         self._prices = None
     
-    def _input(self, code):
+    def input(self, code):
         """
         Helper method to retrieve input parameters.
 
@@ -50,11 +52,27 @@ class BrownianMotion:
             return self._inputs[code]
         raise Exception("Missing inputs : " + code)
     
-    def _optional_input(self, code):
-        if code in self._optional_inputs:
-            return self._optional_inputs[code]
-        else :
-            return None
+    def check_optional_input(self, rate, spot):
+        """
+
+        """
+        if self._optional_inputs is None : 
+            return rate, spot
+                
+         # Option sur action : 
+        if "dividend" in self._optional_inputs : 
+            if "dividend_date" in self._optional_inputs :
+                spot -= self._optional_inputs["dividend"] * np.exp(-rate * self._optional_inputs["dividend_date"])
+            else :
+                spot *= np.exp(-self._optional_inputs["dividend"] * self.input("maturity").maturity())
+                rate -= self._optional_inputs["dividend"]
+                
+                
+        # Option sur taux de change : 
+        if "forward_rate" in self._optional_inputs :
+            spot *= np.exp(-self._optional_inputs["forward_rate"] * self.input("maturity").maturity())
+        
+        return spot, rate
     
     def _generate_z(self):
         """
@@ -62,9 +80,9 @@ class BrownianMotion:
 
         """
         if self._z is None:
-            nb_simulations = self._input("nb_simulations")
-            nb_steps = self._input("nb_steps")
-            maturity : Maturity = self._input("maturity")
+            nb_simulations = self.input("nb_simulations")
+            nb_steps = self.input("nb_steps")
+            maturity : Maturity = self.input("maturity")
             dt = maturity.maturity() / nb_steps
             np.random.seed(272)
             z = np.random.normal(0.0,1.0,[nb_simulations, nb_steps]) * dt ** 0.5
@@ -83,25 +101,16 @@ class BrownianMotion:
         """
         self._generate_z()
         if self._prices is None:
-            spot = self._input("spot")
-            maturity = self._input("maturity")         
-            rates = self._input("rates")
-            volatility = self._input("volatility")
-            nb_steps = self._input("nb_steps")
+            
+            spot = self.input("spot")
+            maturity = self.input("maturity")         
+            rates = self.input("rates")
+            volatility = self.input("volatility")
+            nb_steps = self.input("nb_steps")
             discount_factor = rates.discount_factor(maturity)
             rate = -np.log(discount_factor) / maturity.maturity()
             
-            if not self._optional_inputs is None :
-                # Option sur action : 
-                if not self._optional_input("dividend") is None :
-                    if self._optional_input("dividend_date") is None :
-                        spot = spot * np.exp(-self._optional_input("dividend") * maturity.maturity())
-                        rate = rate - self._optional_input("dividend")
-                    else :
-                        spot = spot - self._optional_input("dividend") * np.exp(-rate * self._optional_input("dividend_date"))
-                # Option sur taux de change : 
-                if not self._optional_input("forward_rate") is None :
-                    spot = spot * np.exp(-self._optional_input("forward_rate") * maturity.maturity())
+            rate, spot = self.check_optional_input(rate, spot)
 
             dt = maturity.maturity()/nb_steps
             z = self._z
@@ -131,8 +140,8 @@ class BrownianMotion:
         if monte_carlo:
             paths = self._generate_paths()
             payoffs = product.payoff(paths)
-            maturity = self._inputs['maturity']
-            discount_factor = self._inputs['rates'].discount_factor(maturity)
+            maturity = self.input("maturity")
+            discount_factor = self.input("rates").discount_factor(maturity)
             price = np.mean(payoffs) * discount_factor
             proba = np.mean(payoffs > 0)
             return {"price": price, "proba": proba}
@@ -141,43 +150,42 @@ class BrownianMotion:
             st = self._prices
             last_values = st[st.columns[-1]]
             ct = product.payoff(last_values)
-            rates = self._input("rates")
-            maturity = self._input("maturity")
+            rates = self.input("rates")
+            maturity = self.input("maturity")
             c0 = rates.discount_factor(maturity) \
                 * np.sum(ct)/len(ct)
-            
             self._z = None
-            
             return {"price":c0, "proba":(ct > 0).sum()/len(ct)}
                 
 
     def _generate_paths(self):
         """
-    Generates asset price paths using the Geometric Brownian Motion model.
-    Parameters:
-        None - All necessary parameters are assumed to be available in `self._inputs`.
+        Generates asset price paths using the Geometric Brownian Motion model.
+        Parameters:
+            None - All necessary parameters are assumed to be available in `self._inputs`.
 
-    Returns:
-        None - The generated price paths are stored directly in `self._prices`.
+        Returns:
+            None - The generated price paths are stored directly in `self._prices`.
     
-    Raises:
-        KeyError: If an expected key is missing from `self._inputs`.
-        ValueError: If any of the numerical inputs are non-positive or otherwise invalid.
+        Raises:
+            KeyError: If an expected key is missing from `self._inputs`.
+            ValueError: If any of the numerical inputs are non-positive or otherwise invalid.
     
-    Notes:
-        - The simulation assumes a constant risk-free rate over the time to maturity.
-        - Volatility is also assumed to be constant over the simulation period.
-        - The number of steps determines the granularity of the simulation; more steps
-          result in finer granularity but require more computational resources.
+        Notes:
+            - The simulation assumes a constant risk-free rate over the time to maturity.
+            - Volatility is also assumed to be constant over the simulation period.
+            - The number of steps determines the granularity of the simulation; more steps
+            result in finer granularity but require more computational resources.
     
-    """
-        nb_simulations = self._inputs['nb_simulations']
-        nb_steps = self._inputs['nb_steps']
-        maturity = self._inputs['maturity'].maturity()
+        """
+        nb_simulations = self.input("nb_simulations")
+        nb_steps = self.input("nb_steps")
+        maturity = self.input("maturity").maturity()
         dt = maturity / nb_steps
-        volatility = self._inputs['volatility']
-        initial_spot = self._inputs['spot']
-        rate = self._inputs['rates'].rate(maturity)   # Assuming a constant rate
+        volatility = self.input("volatility")
+        initial_spot = self.input("spot")
+        rate = self.input("rates").rate(maturity)   # Assuming a constant rate
+        # initial_spot, rate = self.check_optional_input(rate, initial_spot)
 
         z = self._generate_z().to_numpy()
         

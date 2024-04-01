@@ -1,25 +1,21 @@
 from maturity import Maturity
 from rate import Rate
 from optim import Optim
-from zcBond import ZcBond
 
-from math import exp 
-
-# TO DO : rajouter une méthode pour calculer la sensibilité / la duration de l'obligation
 
 class FixedBond:
     """
     A class representing a fixed-rate bond for financial calculations.
     
     Attributes:
-       __rate (Rate): The rate object representing the interest rate.
-       __maturity (Maturity): The maturity object representing the bond's maturity.
-       __nominal (float): The nominal value of the bond.
-       __coupon_rate (float): The coupon rate of the bond.
-       __nb_coupon (int): The number of coupon payments.
-       __coupon (list): List of coupon payments as zero-coupon bonds.
-       __price (float): The price of the bond.
-       __ytm (float): The yield to maturity of the bond.
+       rate (Rate): The rate object representing the interest rate.
+       maturity (Maturity): The maturity object representing the bond's maturity.
+       nominal (float): The nominal value of the bond.
+       coupon_rate (float): The coupon rate of the bond.
+       nb_coupon (int): The number of coupon payments.
+       coupon (list): List of coupon payments as zero-coupon bonds.
+       price (float): The price of the bond.
+       ytm (float): The yield to maturity of the bond.
     """
 
     def __init__(
@@ -41,15 +37,15 @@ class FixedBond:
             rate (Rate): The interest rate object used for calculations.
         """
         
-        self.__rate = rate
-        self.__maturity = maturity
-        self.__nominal = nominal
-        self.__coupon_rate = coupon_rate
-        self.__nb_coupon = nb_coupon
+        self.rate = rate
+        self.maturity = maturity
+        self.nominal = nominal
+        self.coupon_rate = coupon_rate
+        self.nb_coupon = nb_coupon
         
         # # Generate coupon payments :
-        self.__coupon = self.__run_coupon()
-
+        self.coupon = self.run_coupon()
+        
         self.__price = None
         self.__ytm = None
 
@@ -66,7 +62,7 @@ class FixedBond:
         """
         
         if self.__price is None or force_rate is not None:
-            price = sum([zc_bond["zc_bond"].price(force_rate=force_rate) for zc_bond in self.__coupon])
+            price = sum([zc_bond["zc_bond"].price(force_rate=force_rate) for zc_bond in self.coupon])
             
             if force_rate is not None:
                 return price
@@ -94,50 +90,10 @@ class FixedBond:
                 raise Exception("Not found YTM")
             self.__ytm = opt_res["x"][0]
             
-        return self.__ytm
-    
-    
-    def duration(self, force_rate:float=None):
-        # Vraiment pas sure de la formule 
-        
-        m = self.__maturity.maturity() / self.__nb_coupon 
-        c = self.__coupon
-        r_ytm = self.ytm()
-        FV = self.__nominal
-        N = self.__nb_coupon
-        coupon_list = self.__run_coupon()
-        
-        denominator = 0
-        
-        for coupon_t in coupon_list :
-            t = coupon_t["maturity"]
-            coupon = coupon_t["zc_bond"].price(force_rate=force_rate)
-            denominator += coupon / m * exp(-r_ytm / m * t) * t * FV * exp(- r_ytm / m * N) * t
-        
-        return denominator / self.price()
-    
-    def convexite(self, force_rate:float=None):
-        # Vraiment pas sure de la formule 
-        
-        m = self.__maturity.maturity() / self.__nb_coupon 
-        c = self.__coupon
-        r_ytm = self.ytm()
-        FV = self.__nominal
-        N = self.__nb_coupon
-        coupon_list = self.__run_coupon()
-        
-        denominator = 0
-        
-        for coupon_t in coupon_list :
-            t = coupon_t["maturity"]
-            coupon = coupon_t["zc_bond"].price(force_rate=force_rate)
-            denominator += coupon / m * exp(-r_ytm / m * t) * t**2 * FV * exp(- r_ytm / m * N) * t**2
-        
-        return denominator 
-    
+        return self.__ytm    
 
 
-    def  __run_coupon(self):
+    def  run_coupon(self):
         """
         Generate coupon payments represented as zero-coupon bonds.
 
@@ -145,14 +101,14 @@ class FixedBond:
             list: List of dictionaries containing coupon payments.
         """
 
-        t = self.__maturity.maturity() # Get maturity in year
-        step = t / self.__nb_coupon # Step size for each coupon payment
+        t = self.maturity.maturity() # Get maturity in year
+        step = t / self.nb_coupon # Step size for each coupon payment
 
         # Get the period of each coupon payment
-        terms = sorted([abs(t - i * step) for i in range(self.__nb_coupon)], reverse=True) + [0.0]
+        terms = sorted([abs(t - i * step) for i in range(self.nb_coupon)], reverse=True) + [0.0]
 
         # Coupon Frequency
-        freq_coupon = float(self.__coupon_rate) / self.__nb_coupon * self.__nominal
+        freq_coupon = float(self.coupon_rate) / self.nb_coupon * self.nominal
 
         # Get the coupon payment for each term
         coupons= [
@@ -160,11 +116,57 @@ class FixedBond:
                 "maturity" : term,
                 "cf_type" : "coupon",
                 "zc_bond" : ZcBond(
-                    self.__rate, 
+                    self.rate, 
                     Maturity(maturity_in_years=term), 
-                    freq_coupon + (0.0 if term < self.__maturity.maturity() else self.__nominal))
+                    freq_coupon + (0.0 if term < self.maturity.maturity() else self.nominal))
             }
             for term in terms
         ]
         
         return coupons
+
+
+
+class ZcBond:
+    """
+    A class representing a zero-coupon bond.
+
+    Attributes:
+        rate (Rate): The rate object representing the interest rate used for discounting.
+        maturity (Maturity): The maturity object representing the maturity of the bond.
+        nominal (float): The nominal value of the bond.
+
+    """
+
+    def __init__(
+            self, 
+            rate: Rate, 
+            maturity: Maturity, 
+            nominal: float):
+        """
+        Initialize a ZcBond object.
+
+        Args:
+            rate (Rate): The rate object representing the interest rate used for discounting.
+            maturity (Maturity): The maturity object representing the maturity of the bond.
+            nominal (float): The nominal value of the bond.
+        """
+        
+        self.__rate = rate
+        self.__maturity = maturity
+        self.__nominal = nominal
+
+
+    def price(self, force_rate: float = None) -> float:
+        """
+        Calculate the price of the zero-coupon bond.
+
+        Args:
+            force_rate (float, optional): An optional parameter to specify a specific rate for discount factor calculation.
+                If provided, the price will be calculated using the given rate.
+                If not provided, the price will be calculated using the rate associated with the bond.
+
+        Returns:
+            float: The calculated price of the zero-coupon bond.
+        """
+        return self.__nominal * self.__rate.discount_factor(self.__maturity, force_rate = force_rate)

@@ -35,74 +35,37 @@ class AbstractProduct:
         raise Exception("Not implemented")
 
 
-class Call(AbstractProduct):
-    """ A class representing a Call option financial product. """
+class VanillaOption(AbstractProduct):
+    """ A class representing a Vanilla Option (Call/Put) option financial product. """
     
     def __init__(self, inputs):
         """
-        Initialize a Call option object.
+        Initialize a VanillaOption object.
         Args: inputs (dict): Input parameters for the option.
         """
         super().__init__(inputs)
-
+        self.option_type = inputs['option_type'].lower()
+        
     def _strike(self):
-        """
-        Get the strike price.
-
-        Returns:
-            float: Strike price.
-        """
-        # Option sur taux de change 
-        if not self._optional_inputs is None and not self._optional_inputs("domestic_rate") is None :
+        """ Get the strike price. """
+        if not self._optional_inputs is None and "domestic_rate" in self._optional_inputs :
+            # Option sur taux de change 
             return self._inputs.get("strike") * np.exp(-self._optional_inputs("domestic_rate") * self._optional_inputs("maturity").maturity())
         else : 
             return self._inputs.get("strike")
-
+        
     def payoff(self, spot):
+        """ 
+        Calculate and returns the payoff of the Call option.
+        Args: spot (float): Current spot price.
         """
-        Calculate the payoff of the Call option.
-
-        Args:
-            spot (float): Current spot price.
-
-        Returns:
-            float: Payoff of the Call option.
-        """
-        return np.maximum(spot - self._strike(), 0)
-    
-    def greeks(self, spot):
-        pass 
-    
-    
-class Put(AbstractProduct):
-    def __init__(self, inputs):
-        """ A class representing a Put option financial product. """
-        super().__init__(inputs)
-
-    def _strike(self):
-        """
-        Get the strike price.
-
-        Returns:
-            float: Strike price.
-        """
-        # Option sur taux de change 
-        if not self._optional_inputs is None and not self._optional_inputs("domestic_rate") is None :
-            return self._inputs.get("strike") * np.exp(-self._optional_inputs("domestic_rate") * self._inputs("maturity").maturity())
+        if self._inputs.get("option_type").lower() == "call": # self.option_type == "call" :
+            return np.maximum(spot - self._strike(), 0)
+        elif self._inputs.get("option_type").lower() == "put" :
+            return np.maximum(self._strike() - spot, 0)
         else : 
-            return self._inputs.get("strike")
+            raise ValueError("Choose an option type (call or put)")
 
-    def payoff(self, spot):
-        """
-        Calculate the payoff of the Put option.
-
-        Args:
-            spot (float): Current spot price.
-
-        Returns:
-            float: Payoff of the Put option.
-        """
-        return np.maximum(self._strike() - spot, 0)
 
 
 class KnockOutOption(AbstractProduct):
@@ -118,7 +81,6 @@ class KnockOutOption(AbstractProduct):
         knock_out_mask = np.any(paths >= self.barrier, axis=1)
         payoffs[knock_out_mask] = 0
         return payoffs
-
 
 
 class KnockInOption(AbstractProduct):
