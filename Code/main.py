@@ -30,7 +30,6 @@ print("           ")
 #### Test zcBond : 
 zc_bond = ZcBond(rate=rate, maturity=maturity, nominal=100)
 print(f"Prix zero coupon = {zc_bond.price()}")
-# PS : on a le même résultat que le prof avec r = 0.03 :)
 
 #### Test Bond : 
 fixed_bond = FixedBond(coupon_rate=0.1, maturity=maturity, nominal=100, nb_coupon=22, rate=rate)
@@ -47,8 +46,8 @@ print("           ")
 process = BrownianMotion({
     "nb_simulations":1000,
     "nb_steps":1000,
-    "spot":100,
-    "rates":Rate(0.03, rate_type="continuous"),
+    "spot":99,
+    "rates":Rate(0.01, rate_type="compounded"),
     "volatility":0.2,
     "maturity":Maturity(0.5)
 })
@@ -72,7 +71,7 @@ process_share = BrownianMotion({
     "rates":Rate(0.03, rate_type="continuous"),
     "volatility":0.2,
     "maturity":Maturity(0.5),
-}, {"dividend":0.01})
+}, {"dividend":0.02})
 call_share = VanillaOption({"option_type":"call", "strike":102})
 call_2 = process_share.pricing(call_share) 
 print(f"Call sur action : Prix = {call_2['price']}, proba d'exercice = {call_2['proba']}, Payoff = {call_share.payoff(call['price'])}")
@@ -93,15 +92,15 @@ print(f"Put sur Forex : Prix = {put_2['price']}, proba d'exercice = {put_2['prob
 greeks_fx = OptionRisk(put_fx, process_fx)
 print(f"Delta = {greeks_fx.delta()}, Gamma = {greeks_fx.gamma()}, Vega = {greeks_fx.vega()}, theta = {greeks_fx.theta()}, rho = {greeks_fx.rho()}")
 
-print("           ")
+# print("           ")
 
-# Option sur taux de change :
-barrierKO= KnockOutOption({"barrier":120, "strike":100})
-KO_option = process.pricing(barrierKO, monte_carlo=True)
-print(f"KO Option : Prix = {KO_option['price']}, proba d'exercice = {KO_option['proba']}")
-barrierKI= KnockInOption({"barrier":120, "strike":100})
-KI_option = process.pricing(barrierKI, monte_carlo=True)
-print(f"KI Option : Prix = {KI_option['price']}, proba d'exercice = {KI_option['proba']}")
+# # Option sur taux de change :
+# barrierKO= KnockOutOption({"barrier":120, "strike":100})
+# KO_option = process.pricing(barrierKO, monte_carlo=True)
+# print(f"KO Option : Prix = {KO_option['price']}, proba d'exercice = {KO_option['proba']}")
+# barrierKI= KnockInOption({"barrier":120, "strike":100})
+# KI_option = process.pricing(barrierKI, monte_carlo=True)
+# print(f"KI Option : Prix = {KI_option['price']}, proba d'exercice = {KI_option['proba']}")
 
 
 
@@ -114,18 +113,13 @@ print(f"KI Option : Prix = {KI_option['price']}, proba d'exercice = {KI_option['
         - zcBond : OK
         - bond : OK
         - optim : OK
+        - risk : OK
         
             ### Options : ###
         - brownianMotion : OK
-        - products : fonctionne mais pas complet 
+        - products : verifier div et fx + commenter 
+        - risk : ajouter div et fx
         
-        
-    Caro : 
-    - j'ai tenter de rajouter la duration + convexité mais vraiment pas sure de la formule (et des résultats) ??
-    - on a une erreur quand maturité trop longue (problème de discount factor)
-    - option sur action et tx de change fait (d'après le cours), pour les indices je sais pas encore quoi changer 
-    la méthode est pas forcément optimale (et le code pas encore commenté), dites moi si vous voyez des améliorations à faire :) 
-    - A verifier : formule prix (pas le meme que sur pricer google...) + spot avec dividende et fx !!
-    + commenter les nouveaux codes 
+    Problème : run time error sur le discount factor "compounded"
     
 """

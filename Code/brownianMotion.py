@@ -57,7 +57,7 @@ class BrownianMotion:
 
         """
         if self._optional_inputs is None : 
-            return rate, spot
+            return spot, rate
                 
          # Option sur action : 
         if "dividend" in self._optional_inputs : 
@@ -65,7 +65,6 @@ class BrownianMotion:
             if "dividend_date" in self._optional_inputs :
                 spot -= self._optional_inputs["dividend"] * np.exp(-rate * self._optional_inputs["dividend_date"])
             else :
-                # print(f"div = {np.exp(-self._optional_inputs['dividend'] * self.input('maturity').maturity())}")
                 spot *= np.exp(-self._optional_inputs["dividend"] * self.input("maturity").maturity())
                 rate -= self._optional_inputs["dividend"]
                 
@@ -74,6 +73,8 @@ class BrownianMotion:
         if "forward_rate" in self._optional_inputs :
             spot *= np.exp(-self._optional_inputs["forward_rate"] * self.input("maturity").maturity())
         
+        # print(f"_-_-_-_-_-_-_-_-_-_- spot = {spot}")
+        # print(f"_-_-_-_-_-_-_-_-_-_- rate = {rate}")
         return spot, rate
     
     def _generate_z(self):
@@ -112,19 +113,23 @@ class BrownianMotion:
             discount_factor = rates.discount_factor(maturity)
             rate = -np.log(discount_factor) / maturity.maturity()
             
-            rate, spot = self.check_optional_input(rate, spot)
+            spot, rate = self.check_optional_input(rate, spot)
 
             dt = maturity.maturity()/nb_steps
             z = self._z
             drift_dt = (rate - 0.5 * volatility ** 2) * dt # Constante
             
-            motion = z * volatility
-            rdt = drift_dt + motion
+            # motion = z * volatility
+            # rdt = drift_dt + motion
             
-            rdt[0] = 0 # Exception here
+            # rdt[0] = 0 # Exception here
+            rdt = np.cumsum(drift_dt + z * volatility, axis=1)
+            rdt = np.insert(rdt, 0, 0, axis=1) # Insert initial value
+            
         
             log_spot = np.log(spot)
-            log_st = log_spot + np.cumsum(rdt, axis=1)
+            # log_st = log_spot + np.cumsum(rdt, axis=1)
+            log_st = log_spot + rdt
             st = np.exp(log_st)
             
             self._prices = st
@@ -150,7 +155,8 @@ class BrownianMotion:
         else:
             self.__generate_price()
             st = self._prices
-            last_values = st[st.columns[-1]]
+            # last_values = st[st.columns[-1]]
+            last_values = st[:, -1]
             ct = product.payoff(last_values)
             rates = self.input("rates")
             maturity = self.input("maturity")
