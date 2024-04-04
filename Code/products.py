@@ -1,12 +1,5 @@
 import numpy as np
 
-### A rajouter : 
-# - Choix du sous jacent : action, indice ou taux de change 
-# (avec leur attributs respectifs : dividende, taux de change, ...)
-# - Ici la volatilité est unique, je crois qu'il faut aussi la vol stochastique 
-# - Les grecques (je sais pas trop ou les foutre, le split option/mvt brownien du prof est bizarre)
-
-
 class AbstractProduct:
     """ Abstract class representing a financial product. """
     _product_name = "product"
@@ -76,7 +69,7 @@ class KnockOutOption(AbstractProduct):
         self.strike = inputs['strike']
     
     def payoff(self, paths):
-        # This method calculates the payoff considering the barrier. 'paths' is a NumPy array of simulated end prices
+        """ Calculates the payoff considering the barrier. 'paths' is a NumPy array of simulated end prices """
         payoffs = np.maximum(paths - self.strike, 0)  
         knock_out_mask = np.any(paths >= self.barrier, axis=1)
         payoffs[knock_out_mask] = 0
@@ -91,7 +84,7 @@ class KnockInOption(AbstractProduct):
         self.strike = inputs['strike']
 
     def payoff(self, paths):
-        # For KI options, the option is only valid if the barrier is breached
+        """ For KI options, the option is only valid if the barrier is breached """
         payoffs = np.maximum(paths[:, -1] - self.strike, 0)  
         knock_in_mask = np.any(paths >= self.barrier, axis=1)
         payoffs[~knock_in_mask] = 0 

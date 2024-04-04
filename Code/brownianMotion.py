@@ -6,8 +6,6 @@ from maturity import Maturity
 from rate import Rate
 from products import AbstractProduct
 
-# PS : c'est le fichier GbmProcess du cours :) 
-
 class BrownianMotion:
     """
     A class representing a Geometric Brownian Motion (GBM) process for financial simulations.
@@ -54,27 +52,30 @@ class BrownianMotion:
     
     def check_optional_input(self, rate, spot):
         """
+        Adjust optional inputs for spot and rate.
 
+        Args:
+            rate (float): The interest rate.
+            spot (float): The current spot price.
+
+        Returns:
+            tuple: Updated spot and rate.
         """
         if self._optional_inputs is None : 
             return spot, rate
                 
-         # Option sur action : 
+        # For options on stocks:
         if "dividend" in self._optional_inputs : 
-            ########## PROBLEME ICI !!!!
             if "dividend_date" in self._optional_inputs :
                 spot -= self._optional_inputs["dividend"] * np.exp(-rate * self._optional_inputs["dividend_date"])
             else :
                 spot *= np.exp(-self._optional_inputs["dividend"] * self.input("maturity").maturity())
                 rate -= self._optional_inputs["dividend"]
-                
-                
-        # Option sur taux de change : 
+                 
+        # For options on exchange rates:
         if "forward_rate" in self._optional_inputs :
             spot *= np.exp(-self._optional_inputs["forward_rate"] * self.input("maturity").maturity())
-        
-        # print(f"_-_-_-_-_-_-_-_-_-_- spot = {spot}")
-        # print(f"_-_-_-_-_-_-_-_-_-_- rate = {rate}")
+            
         return spot, rate
     
     def _generate_z(self):
@@ -119,16 +120,10 @@ class BrownianMotion:
             z = self._z
             drift_dt = (rate - 0.5 * volatility ** 2) * dt # Constante
             
-            # motion = z * volatility
-            # rdt = drift_dt + motion
-            
-            # rdt[0] = 0 # Exception here
             rdt = np.cumsum(drift_dt + z * volatility, axis=1)
-            rdt = np.insert(rdt, 0, 0, axis=1) # Insert initial value
-            
+            rdt = np.insert(rdt, 0, 0, axis=1) # Insert initial value 
         
             log_spot = np.log(spot)
-            # log_st = log_spot + np.cumsum(rdt, axis=1)
             log_st = log_spot + rdt
             st = np.exp(log_st)
             
@@ -155,7 +150,6 @@ class BrownianMotion:
         else:
             self.__generate_price()
             st = self._prices
-            # last_values = st[st.columns[-1]]
             last_values = st[:, -1]
             ct = product.payoff(last_values)
             rates = self.input("rates")
@@ -193,7 +187,6 @@ class BrownianMotion:
         volatility = self.input("volatility")
         initial_spot = self.input("spot")
         rate = self.input("rates").rate(maturity)   # Assuming a constant rate
-        # initial_spot, rate = self.check_optional_input(rate, initial_spot)
 
         z = self._generate_z().to_numpy()
         
