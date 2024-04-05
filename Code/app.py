@@ -69,19 +69,21 @@ if model_selection == "Bond Pricing":
     zero_bool = st.radio("Type of coupon detachment",
                          ('Zero-Coupon', 'Fixed'))
     nominal = st.number_input('Nominal Value', min_value=100, value=1000, step=100)
-    if zero_bool == "Zero-Coupon":
-        zc_bond=  ZcBond(rate=rate, maturity=maturity, nominal=100)
-        st.write(f"Prix zero coupon bond = {round(zc_bond.price(), 2)}")
-    else:
-        coupon_rate = st.number_input('Coupon Rate', min_value=0.0, value=0.5, step=0.1)
+    if zero_bool == "Fixed":
+        coupon_rate = st.number_input('Coupon Rate', min_value=0.0, value=0.1, step=0.1)
         nb_coupon = st.number_input('Number of coupons', min_value=0, value=50, step=1)
-        fixed_bond = FixedBond(coupon_rate=coupon_rate, 
-                               maturity=maturity, 
-                               nominal=nominal, 
-                               nb_coupon=nb_coupon, 
-                               rate=rate)
-        st.write(f"Prix de l'obligation à taux fixe = {round(fixed_bond.price(), 2)}")
-        st.write(f"YTM de l'obligation à taux fixe = {round(fixed_bond.ytm(), 2)}")
+    if st.button('Simulate Bond Pricing'):
+        if zero_bool == "Zero-Coupon":
+            zc_bond=  ZcBond(rate=rate, maturity=maturity, nominal=100)
+            st.write(f"Prix zero coupon bond = {round(zc_bond.price(), 2)}")
+        elif zero_bool == "Fixed":
+            fixed_bond = FixedBond(coupon_rate=coupon_rate, 
+                                maturity=maturity, 
+                                nominal=nominal, 
+                                nb_coupon=nb_coupon, 
+                                rate=rate)
+            st.write(f"Prix de l'obligation à taux fixe = {round(fixed_bond.price(), 2)}")
+            st.write(f"YTM de l'obligation à taux fixe = {round(fixed_bond.ytm(), 2)}")
 
 ################## OPTIONS ################
 if model_selection in ["Vanilla Options", "Barrier Options"]:
@@ -90,10 +92,7 @@ if model_selection in ["Vanilla Options", "Barrier Options"]:
     nb_steps = st.number_input('Number of Steps', value=100, min_value=1)
     spot = st.number_input('Spot Price', value=100.0)
     volatility = st.slider('Volatility', min_value=0.0, max_value=1.0, value=0.2)
-    rate_value = st.slider('Volatility', min_value=0.0, max_value=4.0, value=0.2)
-    rate = Rate(rate=rate_value, 
-                rate_type=rate_type,) 
-    
+
     process_params = {
         "nb_simulations": nb_simulations,
         "nb_steps": nb_steps,
@@ -149,10 +148,5 @@ if model_selection in ["Vanilla Options", "Barrier Options"]:
                             yaxis_title='Price',
                             xaxis=dict(showgrid=False),
                             yaxis=dict(showgrid=False))
-            # fig.add_trace(go.Scatter(x=0, y=barrier, mode='lines',
-            #              line=dict(color="Red", width=4, dash="dashdot"),
-            #              name=f'Barrier Level: {barrier}'))
 
-            # fig.add_shape(type="line",  x0=0, y0=barrier, x1=price_paths.shape[1]-1, y1=barrier,
-            #                     line=dict(color="Red", width=4, dash="dashdot"))
             st.plotly_chart(fig)
