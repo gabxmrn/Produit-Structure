@@ -1,5 +1,4 @@
 from datetime import datetime
-
 from maturity import Maturity 
 from rate import Rate
 from bond import FixedBond, ZcBond
@@ -118,7 +117,7 @@ barrier_KI= KnockInOption({"barrier":120, "strike":100})
 KI_option = process.pricing(barrier_KI, monte_carlo=True)
 print(f"KI Option : Prix = {round(KI_option['price'], 2)}, proba d'exercice = {round(KI_option['proba'], 2)}")
 
-
+print(process.paths_plot)
 """
     Résumé : 
         - maturity : OK

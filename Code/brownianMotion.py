@@ -31,7 +31,7 @@ class BrownianMotion:
         self._optional_inputs = optional_inputs
         self._z = None
         self._prices = None
-    
+        self.paths_plot = None
     def input(self, code):
         """
         Helper method to retrieve input parameters.
@@ -144,6 +144,7 @@ class BrownianMotion:
             payoffs = product.payoff(paths)
             maturity = self.input("maturity")
             discount_factor = self.input("rates").discount_factor(maturity)
+            self.paths_plot = paths
             price = np.mean(payoffs) * discount_factor
             proba = np.mean(payoffs > 0)
             return {"price": price, "proba": proba}
