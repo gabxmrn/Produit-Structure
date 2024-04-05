@@ -20,7 +20,7 @@ st.header("Common Inputs")
 st.subheader("Maturity")
 maturity_type = st.selectbox('Maturity Type', ['Maturity in years', 'Computed'])
 if maturity_type == 'Maturity in years':
-    mat_value = st.number_input('Maturity in years', value=5.0, min_value=0.0)
+    mat_value = st.number_input('Maturity in years', value=0.5, min_value=0.0)
     maturity = Maturity(mat_value)
 
 else:
@@ -35,8 +35,7 @@ else:
 st.subheader("Rate")
 rate_input_type = st.selectbox(
     "Select the rate input type",
-    ["Specific Rate", "Curve"]
-)
+    ["Specific Rate", "Curve"])
 rate_type = st.selectbox('Rate Type', ['compounded', 'continuous'])
 if rate_input_type == "Specific Rate":
     specific_rate = st.number_input('Enter the specific rate', value=0.03, step=0.01, format="%.2f")
