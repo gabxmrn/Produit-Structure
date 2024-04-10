@@ -37,7 +37,7 @@ class VanillaOption(AbstractProduct):
     
     def __init__(self, underlying:str, inputs:dict) -> None :
         """ 
-        Initialize an VanillaOption object.
+        Initialize a VanillaOption object.
         Args: 
         - underlying (str) : Underlying type for the option. 
         - inputs (dict): Input parameters for the product.
@@ -69,17 +69,35 @@ class VanillaOption(AbstractProduct):
 
 
 class Spread(AbstractProduct):
+    """ A class representing a Spread (Call/Put) option financial product. """
     
     def __init__(self, type:str, inputs: dict) -> None:
+        """ 
+        Initialize a Spread object.
+        Args: 
+        - type (str) : Type of spread. 
+        - inputs (dict): Input parameters for the product.
+        """
         super().__init__(inputs)
-        # Jambe long (acheté)
+        # Long leg (acheté)
         self._long_leg = self._inputs.get("long leg")
         self._long_leg_price = self._inputs.get("long leg price")
 
-        # Jambe short (vendu)
+        # Short leg (vendu)
         self._short_leg = self._inputs.get("short leg")
         self._short_leg_price = self._inputs.get("short leg price")
 
+        # Product type verification
+        if type.lower() == "call spread":
+            if (self._long_leg._option_type != "call" or self._short_leg._option_type != "call"):
+                raise Exception("Input error : Call spread takes two calls as an argument.")
+        elif type.lower() == "put spread":
+            if (self._long_leg._option_type != "put" or self._short_leg._option_type != "put"):
+                raise Exception("Input error : Put spread takes two puts as an argument.")
+        else:
+            raise Exception("Input error : Please enter 'put spread' or 'call spread'.")
+
+        # Strike verification
         if type.lower() == "call spread":
             if self._short_leg._strike <= self._long_leg._strike:
                 raise Exception("Input error : Short leg strike must be greater than long leg strike.")
@@ -90,11 +108,13 @@ class Spread(AbstractProduct):
             raise Exception("Input error : Please enter 'put spread' or 'call spread'.")
 
     def payoff(self, spot) -> float:
+        """ Calculate and returns the payoff of the spread. """
         payoff_long = max(spot - self._long_leg.strike, 0)
         payoff_short = max(spot - self._short_leg.strike, 0)
         return payoff_long - payoff_short
 
     def price(self) -> float:
+        """ Calculate and returns the price of the spread. """
         return self._short_leg_price - self._long_leg_price
 
 
