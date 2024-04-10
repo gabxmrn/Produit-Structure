@@ -68,6 +68,35 @@ class VanillaOption(AbstractProduct):
             raise ValueError("Choose an option type (call or put)")
 
 
+class Spread(AbstractProduct):
+    
+    def __init__(self, type:str, inputs: dict) -> None:
+        super().__init__(inputs)
+        # Jambe long (acheté)
+        self._long_leg = self._inputs.get("long leg")
+        self._long_leg_price = self._inputs.get("long leg price")
+
+        # Jambe short (vendu)
+        self._short_leg = self._inputs.get("short leg")
+        self._short_leg_price = self._inputs.get("short leg price")
+
+        if type.lower() == "call spread":
+            if self._short_leg._strike <= self._long_leg._strike:
+                raise Exception("Input error : Short leg strike must be greater than long leg strike.")
+        elif type.lower() == "put spread":
+            if self._long_leg._strike <= self._short_leg._strike:
+                raise Exception("Input error : Long leg strike must be greater than short leg strike.")
+        else:
+            raise Exception("Input error : Please enter 'put spread' or 'call spread'.")
+
+    def payoff(self, spot) -> float:
+        payoff_long = max(spot - self._long_leg.strike, 0)
+        payoff_short = max(spot - self._short_leg.strike, 0)
+        return payoff_long - payoff_short
+
+    def price(self) -> float:
+        return self._short_leg_price - self._long_leg_price
+
 
 class KnockOutOption(AbstractProduct):
     """ A class representing a KO option financial product. """

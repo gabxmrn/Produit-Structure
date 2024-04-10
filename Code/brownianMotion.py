@@ -123,7 +123,7 @@ class BrownianMotion:
             drift_dt = (rate - 0.5 * volatility ** 2) * dt # Constante
             
             rdt = np.cumsum(drift_dt + z * volatility, axis=1)
-            rdt = np.insert(rdt, 0, 0, axis=1) # Insert initial value 
+            rdt = np.hstack((np.zeros((rdt.shape[0], 1)), rdt)) # Insert initial value 
         
             log_spot = np.log(spot)
             log_st = log_spot + rdt
