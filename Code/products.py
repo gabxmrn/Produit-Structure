@@ -1,18 +1,22 @@
 import numpy as np
 
+FOREX = "forex rate"
+CALL = "call"
+PUT = "put"
+
 class AbstractProduct:
     """ Abstract class representing a financial product. """
     _product_name = "product"
     _inputs = None
 
-    def __init__(self, inputs:dict, optional_inputs:dict = None):
+    def __init__(self, inputs:dict): 
         """ 
         Initialize an AbstractProduct object.
-        Args: inputs (dict): Input parameters for the product.
+        Args: 
+        - inputs (dict): Input parameters for the product.
         """
         self._inputs = inputs
-        self._optional_inputs = optional_inputs
-        
+
 
     def payoff(self, spot):
         """
@@ -31,39 +35,49 @@ class AbstractProduct:
 class VanillaOption(AbstractProduct):
     """ A class representing a Vanilla Option (Call/Put) option financial product. """
     
-    def __init__(self, inputs):
-        """
-        Initialize a VanillaOption object.
-        Args: inputs (dict): Input parameters for the option.
+    def __init__(self, underlying:str, inputs:dict) -> None :
+        """ 
+        Initialize an VanillaOption object.
+        Args: 
+        - underlying (str) : Underlying type for the option. 
+        - inputs (dict): Input parameters for the product.
         """
         super().__init__(inputs)
-        self.option_type = inputs['option_type'].lower()
-        
-    def _strike(self):
+        self._underlying = underlying.lower()
+        self._strike = self._get_strike()
+        self._option_type = self._inputs.get("option_type").lower()
+    
+    def _get_strike(self):
         """ Get the strike price. """
-        if not self._optional_inputs is None and "domestic_rate" in self._optional_inputs :
-            # Option sur taux de change 
-            return self._inputs.get("strike") * np.exp(-self._optional_inputs("domestic_rate") * self._optional_inputs("maturity").maturity())
+        if self._underlying == FOREX :
+            if not "domestic_rate" in self._inputs :
+                raise Exception("Missing inputs : domestic_rate" )
+            elif not "maturity" in self._inputs :
+                raise Exception("Missing inputs : maturity" )
+            return self._inputs["strike"] * np.exp(self._inputs["domestic_rate"] * self._inputs["maturity"].maturity())
         else : 
-            return self._inputs.get("strike")
-        
+            return self._inputs["strike"]
+                
     def payoff(self, spot):
-        """ 
-        Calculate and returns the payoff of the Call option.
-        Args: spot (float): Current spot price.
-        """
-        if self._inputs.get("option_type").lower() == "call": # self.option_type == "call" :
-            return np.maximum(spot - self._strike(), 0)
-        elif self._inputs.get("option_type").lower() == "put" :
-            return np.maximum(self._strike() - spot, 0)
+        """ Calculate and returns the payoff of the option. """
+        if self._option_type == CALL : 
+            return np.maximum(spot - self._strike, 0)
+        elif self._option_type == PUT :
+            return np.maximum(self._strike - spot, 0)
         else : 
             raise ValueError("Choose an option type (call or put)")
 
 
 
 class KnockOutOption(AbstractProduct):
+    """ A class representing a KO option financial product. """
+    
     def __init__(self, inputs):
-        """ A class representing a KO option financial product. """
+        """ 
+        Initialize a KnockOutOption object.
+        Args: 
+        - inputs (dict): Input parameters for the product.
+        """
         super().__init__(inputs)
         self.barrier = inputs['barrier']
         self.strike = inputs['strike']
@@ -77,8 +91,14 @@ class KnockOutOption(AbstractProduct):
 
 
 class KnockInOption(AbstractProduct):
+    """ A class representing a KI option financial product. """
+    
     def __init__(self, inputs):
-        """ A class representing a KI option financial product. """
+        """ 
+        Initialize a KnockInOption object.
+        Args: 
+        - inputs (dict): Input parameters for the product.
+        """
         super().__init__(inputs)
         self.barrier = inputs['barrier']
         self.strike = inputs['strike']

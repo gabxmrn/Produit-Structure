@@ -5,6 +5,10 @@ from brownianMotion import BrownianMotion
 from math import exp, log, sqrt, pi
 from scipy.stats import norm
 
+CAPITALIZED_INDEX = "capitalized index"
+SHARE_DIV = "dividend share"
+
+
 class BondRisk:
     """
     A class representing risk analysis for fixed-income securities.
@@ -80,20 +84,18 @@ class OptionRisk:
             process (BrownianMotion): The Brownian motion process.
         """
         
-        self.__type = option.option_type
-        self.__strike = option._strike()
+        self.__type = option._option_type
+        self.__strike = option._strike
         self.__spot = process.input("spot")
         self.__maturity = process.input("maturity").maturity()
         self.__rate = process.input("rates").rate(self.__maturity) 
         self.__volatility = process.input("volatility")
-        self.__spot, self.__rate = process.check_optional_input(self.__rate, self.__spot)
+        self.__spot, self.__rate = process._check_underlying(option, self.__spot, self.__rate)
         self.__df = process.input("rates").discount_factor(maturity=process.input("maturity"), force_rate=self.__rate)
         
         self.__dividend = 1.0
-        if not process._optional_inputs is None and "dividend" in process._optional_inputs :
-            self.__dividend = exp(-process._optional_inputs["dividend"] * self.__maturity) 
-        
-                
+        if option._underlying == CAPITALIZED_INDEX or option._underlying  == SHARE_DIV :
+            self.__dividend = exp(-process.input("dividend") * self.__maturity) 
                 
     def _get_d1(self) -> float : 
         """Calculate d1 parameter."""

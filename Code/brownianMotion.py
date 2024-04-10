@@ -6,32 +6,36 @@ from maturity import Maturity
 from rate import Rate
 from products import AbstractProduct
 
+SHARE_NO_DIV = "no dividend share"
+SHARE_DIV = "dividend share"
+FOREX = "forex rate"
+CAPITALIZED_INDEX = "capitalized index"
+NON_CAPITALIZED_INDEX = "non capitalized index"
+
 class BrownianMotion:
     """
     A class representing a Geometric Brownian Motion (GBM) process for financial simulations.
 
     Attributes:
         _inputs (dict): A dictionary containing input parameters required for the process.
-        _optional_inputs (dict): A dictionary containing input parameters optional for the process. Default to None.
         _z (pd.DataFrame): DataFrame containing the random component of the process.
         _prices (np.array): Array containing simulated prices of the underlying asset.
 
     """
     
-    def __init__(self, inputs:dict, optional_inputs:dict=None):
+    def __init__(self, inputs:dict):
         """
         Initialize a BrownianMotion object.
 
         Args:
             inputs (dict): A dictionary containing input parameters required for the process.
-            optional_inputs (dict): A dictionary containing input parameters optional for the process. Default to None.
         """
     
         self._inputs = inputs
-        self._optional_inputs = optional_inputs
         self._z = None
         self._prices = None
         self.paths_plot = None
+        
     def input(self, code):
         """
         Helper method to retrieve input parameters.
@@ -50,32 +54,30 @@ class BrownianMotion:
             return self._inputs[code]
         raise Exception("Missing inputs : " + code)
     
-    def check_optional_input(self, rate, spot):
-        """
-        Adjust optional inputs for spot and rate.
-
-        Args:
-            rate (float): The interest rate.
-            spot (float): The current spot price.
-
-        Returns:
-            tuple: Updated spot and rate.
-        """
-        if self._optional_inputs is None : 
-            return spot, rate
+    
+    def _check_underlying(self, product:AbstractProduct, spot:float, rate:float) : 
                 
-        # For options on stocks:
-        if "dividend" in self._optional_inputs : 
-            if "dividend_date" in self._optional_inputs :
-                spot -= self._optional_inputs["dividend"] * np.exp(-rate * self._optional_inputs["dividend_date"])
+        if product._underlying == SHARE_DIV or product._underlying == CAPITALIZED_INDEX :
+            # For options on stocks with dividend and for options on capitalized index:
+            dividend = self.input("dividend")                     
+            if "dividend_date" in self._inputs :
+                spot -= dividend * np.exp(-rate * self.input("dividend_date"))
             else :
-                spot *= np.exp(-self._optional_inputs["dividend"] * self.input("maturity").maturity())
-                rate -= self._optional_inputs["dividend"]
-                 
-        # For options on exchange rates:
-        if "forward_rate" in self._optional_inputs :
-            spot *= np.exp(-self._optional_inputs["forward_rate"] * self.input("maturity").maturity())
+                spot *= np.exp(-dividend * self.input("maturity").maturity())
+                rate -= dividend
+
+        elif product._underlying == SHARE_NO_DIV or product._underlying == NON_CAPITALIZED_INDEX :
+            # For option on stocks without dividend and for options on non capitalized index
+            pass
             
+        elif product._underlying == FOREX :
+            # For options on exchange rates:
+            forward_rate = self.input("forward_rate")
+            spot *= np.exp(-forward_rate * self.input("maturity").maturity())
+        
+        else : 
+            raise Exception("Unknown underlying.")
+        
         return spot, rate
     
     def _generate_z(self):
@@ -98,7 +100,7 @@ class BrownianMotion:
             z = self._z
         return z
     
-    def __generate_price(self):
+    def __generate_price(self, product:AbstractProduct):
         """
         Generate simulated prices of the underlying asset.
         
@@ -114,7 +116,7 @@ class BrownianMotion:
             discount_factor = rates.discount_factor(maturity)
             rate = -np.log(discount_factor) / maturity.maturity()
             
-            spot, rate = self.check_optional_input(rate, spot)
+            spot, rate = self._check_underlying(product, spot, rate)
 
             dt = maturity.maturity()/nb_steps
             z = self._z
@@ -139,6 +141,7 @@ class BrownianMotion:
         Returns:
             dict: Dictionary containing the calculated price and probability.
         """
+        
         if monte_carlo:
             paths = self._generate_paths()
             payoffs = product.payoff(paths)
@@ -149,7 +152,7 @@ class BrownianMotion:
             proba = np.mean(payoffs > 0)
             return {"price": price, "proba": proba}
         else:
-            self.__generate_price()
+            self.__generate_price(product)
             st = self._prices
             last_values = st[:, -1]
             ct = product.payoff(last_values)

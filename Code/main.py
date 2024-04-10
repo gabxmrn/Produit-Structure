@@ -56,11 +56,11 @@ process = BrownianMotion({
     "maturity":Maturity(0.5)
 })
 
-call_product = VanillaOption({"option_type":"call", "strike":102})
+call_product = VanillaOption("no dividend share", {"option_type":"call", "strike":102})
 call_process = process.pricing(call_product) 
 call_greeks = OptionRisk(call_product, process)
 
-put_product = VanillaOption({"option_type":"put", "strike":102})
+put_product = VanillaOption("non capitalized index", {"option_type":"put", "strike":102})
 put_process = process.pricing(put_product)
 put_greeks = OptionRisk(put_product, process)
 
@@ -79,12 +79,12 @@ process_share = BrownianMotion({
     "spot":100,
     "rates":Rate(0.03, rate_type="continuous"),
     "volatility":0.2,
-    "maturity":Maturity(0.5),}, 
-    {"dividend":0.02})
-call_share = VanillaOption({"option_type":"call", "strike":102})
+    "maturity":Maturity(0.5), 
+    "dividend":0.02})
+call_share = VanillaOption("dividend share", {"option_type":"call", "strike":102})
 call_process_share = process_share.pricing(call_share) 
 greeks_share = OptionRisk(call_share, process_share)
-print(f"Share Call : Prix = {round(call_process_share['price'], 2)}, proba d'exercice = {round(call_process_share['proba'], 2)}, Payoff = {call_share.payoff(call_process_share['price'])}")
+print(f"Share Call : Prix = {round(call_process_share['price'], 2)}, proba d'exercice = {round(call_process_share['proba'], 2)}, Payoff = {round(call_share.payoff(call_process_share['price']), 2)}")
 print(f"Greeks -> {greeks_share.greeks()}")
 
 process_fx = BrownianMotion({
@@ -93,13 +93,12 @@ process_fx = BrownianMotion({
     "spot":100,
     "rates":Rate(0.03, rate_type="continuous"),
     "volatility":0.2,
-    "maturity":Maturity(0.5),}, 
-    {"forward_rate":0.2, 
-    "domestic_rate":0.1})
-put_fx = VanillaOption({"option_type":"put", "strike":102})
+    "maturity":Maturity(0.5), 
+    "forward_rate":0.2})
+put_fx = VanillaOption("forex rate", {"option_type":"put", "strike":102, "domestic_rate":0.1, "maturity":Maturity(0.5)})
 put_process_fx = process_fx.pricing(put_fx) 
 greeks_fx = OptionRisk(put_fx, process_fx)
-print(f"Forext Put : Prix = {round(put_process_fx['price'], 2)}, proba d'exercice = {round(put_process_fx['proba'], 2)}, Payoff = {put_fx.payoff(put_process_fx['price'])}")
+print(f"Forex Put : Prix = {round(put_process_fx['price'], 2)}, proba d'exercice = {round(put_process_fx['proba'], 2)}, Payoff = {round(put_fx.payoff(put_process_fx['price']), 2)}")
 print(f"Greeks -> {greeks_fx.greeks()}")
 
 print("           ")
@@ -117,7 +116,7 @@ barrier_KI= KnockInOption({"barrier":120, "strike":100})
 KI_option = process.pricing(barrier_KI, monte_carlo=True)
 print(f"KI Option : Prix = {round(KI_option['price'], 2)}, proba d'exercice = {round(KI_option['proba'], 2)}")
 
-print(process.paths_plot)
+
 """
     Résumé : 
         - maturity : OK
