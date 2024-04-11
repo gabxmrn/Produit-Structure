@@ -3,7 +3,7 @@ from maturity import Maturity
 from rate import Rate
 from bond import FixedBond, ZcBond
 from brownianMotion import BrownianMotion
-from products import VanillaOption, KnockInOption, KnockOutOption, Spread, OptionProducts, ButterflySpread
+from products import VanillaOption, KnockInOption, KnockOutOption, BinaryOption, Spread, OptionProducts, ButterflySpread
 
 from riskAnalysis import BondRisk, OptionRisk
 
@@ -229,6 +229,28 @@ print(f"Prix du strap (long) : {round(strap.price(),2)}")
 
 print("           ")
 
+
+########################################## BINARY OPTIONS #####################################
+
+
+
+high_low = BinaryOption({"strike":102, "option_type":"binary_call", "payoff_amount": 120})
+high_low_process = process.pricing(high_low)
+print(f"Prix du high_low : {round(high_low_process['price'],2)}")
+print(f"proba du high_low : {round(high_low_process['proba'],2)}")
+
+one_touch = BinaryOption({"strike":102, "option_type":"one_touch", "payoff_amount": 120, "barrier":110})
+one_touch_process = process.pricing(one_touch)
+print(f"Prix du one_touch : {round(one_touch_process['price'],2)}")
+print(f"proba du one_touch : {round(one_touch_process['proba'],2)}")
+
+double_one_touch =  BinaryOption({"strike":102, "option_type":"double_one_touch", "payoff_amount": 120, "upper_barrier":110, "lower_barrier":90})
+double_one_touch_process = process.pricing(double_one_touch)
+print(f"Prix du double_one_touch : {round(double_one_touch_process['price'],2)}")
+print(f"proba du double_one_touch : {round(double_one_touch_process['proba'],2)}")
+
+print("           ")
+
 ########################################### TEST BARRIER OPTIONS : ###########################################
 
 # # Test Knock Out Option (KO) : 
@@ -266,12 +288,15 @@ print("           ")
             ### Produits à stratégie optionnelle : ###
         - call spread : ok
         - put spread : ok
-        - straddle
-        - strangle
-        - butterfly
-        - strap
-        - strip
+        - straddle  : ok
+        - strangle : ok
+        - butterfly : ok
+        - strap : ok
+        - strip : ok
 
-    Problème : run time error sur le discount factor "compounded"
+
+            ### Options binaires : ###
+
+        Problème : run time error sur le discount factor "compounded"
     
 """

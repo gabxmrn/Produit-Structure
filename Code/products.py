@@ -46,7 +46,6 @@ class VanillaOption(AbstractProduct):
         self._underlying = underlying.lower()
         self._strike = self._get_strike()
         self._option_type = self._inputs.get("option_type").lower()
-    
     def _get_strike(self):
         """ Get the strike price. """
         if self._underlying == FOREX :
@@ -138,6 +137,53 @@ class OptionProducts(AbstractProduct):
             return price
         else:
             return -price
+
+class BinaryOption(AbstractProduct):
+    def __init__(self, inputs:dict) -> None:
+        super().__init__(inputs)
+        self._strike = self._inputs.get("strike")
+        self._option_type = self._inputs.get("option_type").lower()
+        self._barrier = self._inputs.get("barrier")
+        self._lower_barrier =self._inputs.get("lower_barrier")
+        self._upper_barrier =self._inputs.get("upper_barrier")
+        self._payoff_amount =self._inputs.get("payoff_amount")    
+    
+    def __validate_parameters(self):
+        # Check for required parameters based on option type
+        if self._option_type in ["one_touch", "no_touch"] and self._barrier is None:
+            raise ValueError(f"Barrier value required for {self._option_type} option.")
+        if self._option_type in ["double_one_touch", "double_no_touch"] and \
+           (self._lower_barrier is None or self._upper_barrier is None):
+            raise ValueError(f"Both lower and upper barrier values required for {self._option_type} option.")
+    
+        
+    def payoff(self, spot:float)-> float:
+        """
+        Calculates the payoff of the binary option based on the final spot price.
+
+        Parameters:
+        - spot (float): The final spot price of the underlying asset at expiration.
+
+        Returns:
+        - float: The payoff of the option.
+        """
+        self.__validate_parameters()
+        spot_array = np.asarray(spot)
+
+        if self._option_type == "binary_call":
+            return np.where(spot_array > self._strike, self._payoff_amount, 0)
+        elif self._option_type == "binary_put":
+            return np.where(spot_array < self._strike, self._payoff_amount, 0)
+        elif self._option_type == "one_touch":
+            return np.where(spot_array >= self._barrier, self._payoff_amount, 0)
+        elif self._option_type == "no_touch":
+            return np.where(spot_array < self._barrier, self._payoff_amount, 0) 
+        elif self._option_type == "double_one_touch":
+            return np.where((spot_array <= self._lower_barrier) | (spot_array >= self._upper_barrier), self._payoff_amount, 0)
+        elif self._option_type == "double_no_touch":
+            return np.where((spot_array > self._lower_barrier) & (spot_array < self._upper_barrier), self._payoff_amount, 0)
+        else:
+            raise ValueError("Unsupported option type")
 
 
 class Spread(AbstractProduct):
@@ -263,3 +309,4 @@ class KnockInOption(AbstractProduct):
         knock_in_mask = np.any(paths >= self.barrier, axis=1)
         payoffs[~knock_in_mask] = 0 
         return payoffs
+        
