@@ -299,3 +299,50 @@ class SpreadRisk:
     def rho(self) -> float :
         """Calculate spread rho."""
         return self._long_leg_greeks.rho() - self._short_leg_greeks.rho()
+
+
+class ButterflySpreadRisk:
+    """
+    A class representing risk analysis for a butterfly spread option.
+    
+    Attributes:
+        _call_spread (Spread): The call spread of the butterfly.
+        _put_spread (Spread): The put spread of the butterfly.
+    """    
+
+    def __init__(self, butterfly:ButterflySpread, process:BrownianMotion) -> None:
+        """
+        Initialize SpreadRisk object.
+
+        Args:
+            butterfly (ButterflySpread): The butterfly spread option to analyze.
+            process (BrownianMotion): The Brownian motion process.
+        """
+
+        # Greeks
+        self._put_spread_greeks = SpreadRisk(butterfly._put_spread, process)
+        self._call_spread_greeks = SpreadRisk(butterfly._call_spread, process)
+    
+    def greeks(self) -> str : 
+        """Return all butterfly spread greeks."""
+        return f"Delta = {round(self.delta(), 2)}, gamma = {round(self.gamma(), 2)}, vega = {round(self.vega(), 2)}, theta = {round(self.theta(), 2)}, rho = {round(self.rho(), 2)}"
+    
+    def delta(self) -> float :
+        """Calculate butterfly spread delta."""
+        return -(self._put_spread_greeks.delta() + self._call_spread_greeks.delta())
+    
+    def gamma(self) -> float :
+        """Calculate butterfly spread gamma."""
+        return -(self._put_spread_greeks.gamma() + self._call_spread_greeks.gamma())
+    
+    def vega(self) -> float :
+        """Calculate butterfly spread vega."""
+        return -(self._put_spread_greeks.vega() + self._call_spread_greeks.vega())
+    
+    def theta(self) -> float :
+        """Calculate butterfly spread theta."""
+        return -(self._put_spread_greeks.theta() + self._call_spread_greeks.theta())
+    
+    def rho(self) -> float :
+        """Calculate butterfly spread rho."""
+        return -(self._put_spread_greeks.rho() + self._call_spread_greeks.rho())

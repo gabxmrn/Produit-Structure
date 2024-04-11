@@ -5,7 +5,7 @@ from bond import FixedBond, ZcBond
 from brownianMotion import BrownianMotion
 from products import VanillaOption, KnockInOption, KnockOutOption, BinaryOption, Spread, OptionProducts, ButterflySpread
 
-from riskAnalysis import BondRisk, OptionRisk, OptionProductsRisk, SpreadRisk
+from riskAnalysis import BondRisk, OptionRisk, OptionProductsRisk, SpreadRisk, ButterflySpreadRisk
 
 
 ########################################### TEST MATURITY & RATE : ###########################################
@@ -129,7 +129,7 @@ print(f"Call long (strike 95) : Prix = {round(long_process['price'], 2)}")
 call_spread = Spread("call spread",
                      {"long leg": long_call, "long leg price":long_process['price'], "short leg": short_call, "short leg price": short_process['price']})
 print(f"Prix du call spread : {round(call_spread.price(),2)}")
-call_spread_greeks = OptionProductsRisk(call_spread, process)
+call_spread_greeks = SpreadRisk(call_spread, process)
 print(f"Greeks -> {call_spread_greeks.greeks()}")
 
 
@@ -150,9 +150,8 @@ print(f"Put long (strike 105) : Prix = {round(long_process2['price'], 2)}")
 put_spread = Spread("put spread",
                      {"long leg": long_put, "long leg price":long_process2['price'], "short leg": short_put, "short leg price": short_process2['price']})
 print(f"Prix du put spread : {round(put_spread.price(),2)}")
-put_spread_greeks = OptionProductsRisk(put_spread, process)
+put_spread_greeks = SpreadRisk(put_spread, process)
 print(f"Greeks -> {put_spread_greeks.greeks()}")
-
 
 print("           ")
 
@@ -160,6 +159,8 @@ print("           ")
 
 butterfly_spread = ButterflySpread({"put spread":put_spread, "call spread":call_spread})
 print(f"Prix du butterfly spread : {round(butterfly_spread.price(),2)}")
+butterfly_greeks = ButterflySpreadRisk(butterfly_spread, process)
+print(f"Greeks -> {butterfly_greeks.greeks()}")
 
 print("           ")
 
@@ -297,18 +298,13 @@ print("           ")
         - risk : ??? je sais pas si on peut en faire
 
             ### Produits à stratégie optionnelle : ###
-        - call spread : ok
-        - put spread : ok
-        - straddle  : ok
-        - strangle : ok
-        - butterfly : ok
-        - strap : ok
-        - strip : ok
-        - risk : to do (gabrielle)
+        - produits : OK
+        - greeks : OK
+        - graphiques :
 
             ### Options binaires : ###
-        - produits : ok
-        - risk
+        - produits : OK
+        - risk :
 
             ### Produits Structurés : ###
         - produits :
