@@ -138,6 +138,7 @@ class OptionProducts(AbstractProduct):
         else:
             return -price
 
+
 class BinaryOption(AbstractProduct):
     def __init__(self, inputs:dict) -> None:
         super().__init__(inputs)
@@ -156,7 +157,6 @@ class BinaryOption(AbstractProduct):
            (self._lower_barrier is None or self._upper_barrier is None):
             raise ValueError(f"Both lower and upper barrier values required for {self._option_type} option.")
     
-        
     def payoff(self, spot:float)-> float:
         """
         Calculates the payoff of the binary option based on the final spot price.

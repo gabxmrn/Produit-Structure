@@ -229,10 +229,7 @@ print(f"Prix du strap (long) : {round(strap.price(),2)}")
 
 print("           ")
 
-
 ########################################## BINARY OPTIONS #####################################
-
-
 
 high_low = BinaryOption({"strike":102, "option_type":"binary_call", "payoff_amount": 120})
 high_low_process = process.pricing(high_low)
@@ -293,9 +290,15 @@ print("           ")
         - butterfly : ok
         - strap : ok
         - strip : ok
-
+        - risk : to do (gabrielle)
 
             ### Options binaires : ###
+        - produits : ok
+        - risk
+
+            ### Produits Structurés : ###
+        - produits :
+        - risk :
 
         Problème : run time error sur le discount factor "compounded"
     
