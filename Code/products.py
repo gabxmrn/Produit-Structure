@@ -70,7 +70,7 @@ class VanillaOption(AbstractProduct):
 class OptionProducts(AbstractProduct):
     """ A class representing a Straddle or a Strangle financial product. """
 
-    def __init__(self, type:str, long_short:str, inputs: dict):
+    def __init__(self, type:str, long_short:str, inputs: dict) -> None:
         """ 
         Initialize a Spread object.
         Args: 
@@ -89,7 +89,8 @@ class OptionProducts(AbstractProduct):
         self._put_price = self._inputs.get("put price")
 
         # Check product type
-        if type.lower() not in ["straddle", "strangle", "strip", "strap"]:
+        self._type = type.lower()
+        if self._type not in ["straddle", "strangle", "strip", "strap"]:
             raise Exception("Input Error : Please select straddle, strangle, strip, or strap as a product.")
                     
         # Check if product is long or short
@@ -102,7 +103,6 @@ class OptionProducts(AbstractProduct):
             raise Exception("Input Error : Please enter a call and a put.")
         
         # Check strikes
-        self._type = type
         if self._type == "straddle" or self._type == "strip" or self._type == "strap":
             if self._call._strike != self._put._strike:
                 raise Exception("Input Error : For a straddle, the strike should be the same for the put and the call.")
@@ -238,7 +238,7 @@ class Spread(AbstractProduct):
 class ButterflySpread(AbstractProduct):
     """ A class representing a Butterfly Spread financial product. """
 
-    def __init__(self, inputs: dict):
+    def __init__(self, inputs: dict) -> None:
         """ 
         Initialize a Butterfly Spread object.
         Args: 

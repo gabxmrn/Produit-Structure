@@ -1,5 +1,5 @@
 from bond import FixedBond
-from products import VanillaOption
+from products import VanillaOption, Spread, ButterflySpread, OptionProducts
 from brownianMotion import BrownianMotion
 
 from math import exp, log, sqrt, pi
@@ -158,3 +158,144 @@ class OptionRisk:
             return self.__dividend * (self.__strike * self.__maturity * self.__df * Nd2)
         elif self.__type == "put" : 
             return self.__dividend * (- self.__strike * self.__maturity * self.__df * (1 - Nd2))
+        
+
+class OptionProductsRisk:
+    """
+    A class representing risk analysis for option products.
+    
+    Attributes:
+        _call (VanillaOption): The call part of the financial product.
+        _put (VanillaOption): The put part of the financial product.
+        _longshort (str) : If the product is long or short.
+        _type (str) : The product type (straddle, strangle, strip or strap).
+    """ 
+    
+    def __init__ (self, product:OptionProducts, process:BrownianMotion) -> None :
+        """
+        Initialize OptionProductsRisk object.
+
+        Args:
+            option (OptionProducts): The option to analyze.
+            process (BrownianMotion): The Brownian motion process.
+        """
+        
+        # Product caracteristics
+        self._call = product._call
+        self._put = product._put
+        self._longshort = product._longshort
+        self._type = product._type
+
+        # Greeks
+        self._call_greeks = OptionRisk(self._call, process)
+        self._put_greeks = OptionRisk(self._put, process)
+
+        # Check product type
+        if self._type not in ["straddle", "strangle", "strip", "strap"]:
+            raise Exception("Input error : Please enter a straddle, strangle, strap or strip product.")
+    
+    def greeks(self) -> str : 
+        """Return all product greeks."""
+        return f"Delta = {round(self.delta(), 2)}, gamma = {round(self.gamma(), 2)}, vega = {round(self.vega(), 2)}, theta = {round(self.theta(), 2)}, rho = {round(self.rho(), 2)}"
+    
+    def delta(self) -> float :
+        """Calculate product delta."""
+        if self._type in ["straddle", "strangle"]:
+            return self._call_greeks.delta() + self._put_greeks.delta()
+        elif self._type == "strap":
+            return self._call_greeks.delta() + self._put_greeks.delta() * 2
+        elif self._type == "strip":
+            return self._call_greeks.delta() * 2 + self._put_greeks.delta()
+        
+    def gamma(self) -> float :
+        """Calculate product gamma."""
+        if self._type in ["straddle", "strangle"]:
+            return self._call_greeks.gamma() + self._put_greeks.gamma()
+        elif self._type == "strap":
+            return self._call_greeks.gamma() + self._put_greeks.gamma() * 2
+        elif self._type == "strip":
+            return self._call_greeks.gamma() * 2 + self._put_greeks.gamma()
+    
+    def vega(self) -> float :
+        """Calculate product vega."""
+        if self._type in ["straddle", "strangle"]:
+            return self._call_greeks.vega() + self._put_greeks.vega()
+        elif self._type == "strap":
+            return self._call_greeks.vega() + self._put_greeks.vega() * 2
+        elif self._type == "strip":
+            return self._call_greeks.vega() * 2 + self._put_greeks.vega()
+     
+    def theta(self) -> float :
+        """Calculate product theta."""
+        if self._type in ["straddle", "strangle"]:
+            return self._call_greeks.theta() + self._put_greeks.theta()
+        elif self._type == "strap":
+            return self._call_greeks.theta() + self._put_greeks.theta() * 2
+        elif self._type == "strip":
+            return self._call_greeks.theta() * 2 + self._put_greeks.theta()
+        
+    def rho(self) -> float :
+        """Calculate product rho."""
+        if self._type in ["straddle", "strangle"]:
+            return self._call_greeks.rho() + self._put_greeks.rho()
+        elif self._type == "strap":
+            return self._call_greeks.rho() + self._put_greeks.rho() * 2
+        elif self._type == "strip":
+            return self._call_greeks.rho() * 2 + self._put_greeks.rho()
+   
+
+class SpreadRisk:
+    """
+    A class representing risk analysis for spread options.
+    
+    Attributes:
+        _type (str): The type of spread (call or put).
+        _long_leg (VanillaOption): The long leg of the spread.
+        _short_leg (VanillaOption): The short leg of the spread.
+    """    
+
+    def __init__(self, spread:Spread, process:BrownianMotion) -> None:
+        """
+        Initialize SpreadRisk object.
+
+        Args:
+            option (Spread): The spread option to analyze.
+            process (BrownianMotion): The Brownian motion process.
+        """
+        
+        # Spread caracteristics
+        self._long_leg = spread._long_leg
+        self._short_leg = spread._short_leg
+        self._type = spread._type
+
+        # Check product type
+        if self._type not in ["call spread", "put spread"]:
+            raise Exception("Input error : Please enter a call spread or a put spread.")
+
+        # Greeks
+        self._long_leg_greeks = OptionRisk(self._long_leg, process)
+        self._short_leg_greeks = OptionRisk(self._short_leg, process)
+
+    def greeks(self) -> str : 
+        """Return all spread greeks."""
+        return f"Delta = {round(self.delta(), 2)}, gamma = {round(self.gamma(), 2)}, vega = {round(self.vega(), 2)}, theta = {round(self.theta(), 2)}, rho = {round(self.rho(), 2)}"
+    
+    def delta(self) -> float :
+        """Calculate spread delta."""
+        return self._long_leg_greeks.delta() - self._short_leg_greeks.delta()
+    
+    def gamma(self) -> float :
+        """Calculate spread gamma."""
+        return self._long_leg_greeks.gamma() - self._short_leg_greeks.gamma()
+    
+    def vega(self) -> float :
+        """Calculate spread vega."""
+        return self._long_leg_greeks.vega() - self._short_leg_greeks.vega()
+    
+    def theta(self) -> float :
+        """Calculate spread theta."""
+        return self._long_leg_greeks.theta() - self._short_leg_greeks.theta()
+    
+    def rho(self) -> float :
+        """Calculate spread rho."""
+        return self._long_leg_greeks.rho() - self._short_leg_greeks.rho()
