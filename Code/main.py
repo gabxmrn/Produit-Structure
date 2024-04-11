@@ -3,7 +3,7 @@ from maturity import Maturity
 from rate import Rate
 from bond import FixedBond, ZcBond
 from brownianMotion import BrownianMotion
-from products import VanillaOption, KnockInOption, KnockOutOption, Spread, OptionProducts
+from products import VanillaOption, KnockInOption, KnockOutOption, Spread, OptionProducts, ButterflySpread
 
 from riskAnalysis import BondRisk, OptionRisk
 
@@ -135,18 +135,25 @@ print("           ")
 ############################# PUT SPREAD
 
 # Put vendu (short)
-short_put = VanillaOption("no dividend share", {"option_type":"put", "strike":95})
+short_put = VanillaOption("no dividend share", {"option_type":"put", "strike":105})
 short_process2 = process.pricing(short_put)
 print(f"Put short (strike 95) : Prix = {round(short_process2['price'], 2)}")
 
 # Put acheté (long)
-long_put = VanillaOption("no dividend share", {"option_type":"put", "strike":105})
+long_put = VanillaOption("no dividend share", {"option_type":"put", "strike":110})
 long_process2 = process.pricing(long_put)
 print(f"Put long (strike 105) : Prix = {round(long_process2['price'], 2)}")
 
 put_spread = Spread("put spread",
                      {"long leg": long_put, "long leg price":long_process2['price'], "short leg": short_put, "short leg price": short_process2['price']})
 print(f"Prix du put spread : {round(put_spread.price(),2)}")
+
+print("           ")
+
+############################# BUTTERFLY SPREAD
+
+butterfly_spread = ButterflySpread({"put spread":put_spread, "call spread":call_spread})
+print(f"Prix du butterfly spread : {round(butterfly_spread.price(),2)}")
 
 print("           ")
 

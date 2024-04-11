@@ -68,54 +68,6 @@ class VanillaOption(AbstractProduct):
             raise ValueError("Choose an option type (call or put)")
 
 
-class Spread(AbstractProduct):
-    """ A class representing a Spread (Call/Put) option financial product. """
-    
-    def __init__(self, type:str, inputs: dict) -> None:
-        """ 
-        Initialize a Spread object.
-        Args: 
-        - type (str) : Type of spread. 
-        - inputs (dict): Input parameters for the product.
-        """
-        super().__init__(inputs)
-        # Long leg (acheté)
-        self._long_leg = self._inputs.get("long leg")
-        self._long_leg_price = self._inputs.get("long leg price")
-
-        # Short leg (vendu)
-        self._short_leg = self._inputs.get("short leg")
-        self._short_leg_price = self._inputs.get("short leg price")
-
-        # Check option type
-        if type.lower() == "call spread":
-            if (self._long_leg._option_type != "call" or self._short_leg._option_type != "call"):
-                raise Exception("Input error : Call spread takes two calls as an argument.")
-        elif type.lower() == "put spread":
-            if (self._long_leg._option_type != "put" or self._short_leg._option_type != "put"):
-                raise Exception("Input error : Put spread takes two puts as an argument.")
-        else:
-            raise Exception("Input error : Please enter 'put spread' or 'call spread'.")
-
-        # Check strike
-        if type.lower() == "call spread":
-            if self._short_leg._strike <= self._long_leg._strike:
-                raise Exception("Input error : Short leg strike must be greater than long leg strike.")
-        elif type.lower() == "put spread":
-            if self._long_leg._strike <= self._short_leg._strike:
-                raise Exception("Input error : Long leg strike must be greater than short leg strike.")
-        else:
-            raise Exception("Input error : Please enter 'put spread' or 'call spread'.")
-
-    def payoff(self) -> float:
-        """ Calculate and returns the payoff of the spread. """
-        return self._long_leg.payoff() - self._short_leg.payoff()
-
-    def price(self) -> float:
-        """ Calculate and returns the price of the spread. """
-        return self._short_leg_price - self._long_leg_price
-
-
 class OptionProducts(AbstractProduct):
     """ A class representing a Straddle or a Strangle financial product. """
 
@@ -159,14 +111,14 @@ class OptionProducts(AbstractProduct):
             if self._call._strike <= self._put._strike:
                 raise Exception("Input Error : For a strangle, the call strike should be higher than the put strike.")
 
-    def payoff(self) -> float:
+    def payoff(self, spot:float) -> float:
         """ Calculate and returns the payoff of an option product. """
         if self._type == "straddle" or self._type == "strangle":
-            payoff = self._call.payoff() + self._put.payoff()
+            payoff = self._call.payoff(spot) + self._put.payoff(spot)
         elif self._type == "strip":
-            payoff = self._call.payoff() + self._put.payoff() * 2
+            payoff = self._call.payoff(spot) + self._put.payoff(spot) * 2
         elif self._type == "strap":
-            payoff = self._call.payoff() * 2 + self._put.payoff()
+            payoff = self._call.payoff(spot) * 2 + self._put.payoff(spot)
             
         if self._longshort == "long":
             return payoff
@@ -186,6 +138,89 @@ class OptionProducts(AbstractProduct):
             return price
         else:
             return -price
+
+
+class Spread(AbstractProduct):
+    """ A class representing a Spread (Call/Put) option financial product. """
+    
+    def __init__(self, type:str, inputs: dict) -> None:
+        """ 
+        Initialize a Spread object.
+        Args: 
+        - type (str) : Type of spread. 
+        - inputs (dict): Input parameters for the product.
+        """
+        super().__init__(inputs)
+        # Long leg (acheté)
+        self._long_leg = self._inputs.get("long leg")
+        self._long_leg_price = self._inputs.get("long leg price")
+
+        # Short leg (vendu)
+        self._short_leg = self._inputs.get("short leg")
+        self._short_leg_price = self._inputs.get("short leg price")
+
+        # Check option type
+        self._type = type.lower()
+        if self._type == "call spread":
+            if (self._long_leg._option_type != "call" or self._short_leg._option_type != "call"):
+                raise Exception("Input error : Call spread takes two calls as an argument.")
+        elif self._type == "put spread":
+            if (self._long_leg._option_type != "put" or self._short_leg._option_type != "put"):
+                raise Exception("Input error : Put spread takes two puts as an argument.")
+        else:
+            raise Exception("Input error : Please enter 'put spread' or 'call spread'.")
+
+        # Check strike
+        if self._type == "call spread":
+            if self._short_leg._strike <= self._long_leg._strike:
+                raise Exception("Input error : Short leg strike must be greater than long leg strike.")
+        elif self._type == "put spread":
+            if self._long_leg._strike <= self._short_leg._strike:
+                raise Exception("Input error : Long leg strike must be greater than short leg strike.")
+        else:
+            raise Exception("Input error : Please enter 'put spread' or 'call spread'.")
+
+    def payoff(self, spot:float) -> float:
+        """ Calculate and returns the payoff of the spread. """
+        return self._long_leg.payoff(spot) - self._short_leg.payoff(spot)
+
+    def price(self) -> float:
+        """ Calculate and returns the price of the spread. """
+        return self._short_leg_price - self._long_leg_price
+    
+    
+class ButterflySpread(AbstractProduct):
+    """ A class representing a Butterfly Spread financial product. """
+
+    def __init__(self, inputs: dict):
+        """ 
+        Initialize a Butterfly Spread object.
+        Args: 
+        - inputs (dict): Input parameters for the product.
+        """
+        super().__init__(inputs)
+
+        # Put spread
+        self._put_spread = self._inputs.get("put spread")
+
+        # Call spread
+        self._call_spread = self._inputs.get("call spread")
+
+        # Check product type
+        if self._call_spread._type != "call spread" or self._put_spread._type != "put spread":
+            raise Exception("Input error : please enter a put spread and a call spread.")
+
+        # Check strikes
+        if self._put_spread._short_leg._strike != self._call_spread._short_leg._strike:
+            raise Exception("Input error : The strike of the put spread short leg should be equal to the strike of the call spread short leg.")
+
+    def payoff(self, spot:float) -> float:
+        """ Calculate and returns the payoff of the butterfly spread. """
+        return self._put_spread.payoff(spot) + self._call_spread.payoff(spot)
+
+    def price(self)  -> float:
+        """ Calculate and returns the price of the butterfly spread. """
+        return self._put_spread.price() + self._call_spread.price()
 
 
 class KnockOutOption(AbstractProduct):
