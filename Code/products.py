@@ -1,4 +1,6 @@
 import numpy as np
+from scipy.stats import norm
+
 
 FOREX = "forex rate"
 CALL = "call"
@@ -140,7 +142,14 @@ class OptionProducts(AbstractProduct):
 
 
 class BinaryOption(AbstractProduct):
+    """ A class representing binary option financial product. """
+
     def __init__(self, inputs:dict) -> None:
+        """ 
+        Initialize a Spread object.
+        Args: 
+        - inputs (dict): Input parameters for the product.
+        """
         super().__init__(inputs)
         self._strike = self._inputs.get("strike")
         self._option_type = self._inputs.get("option_type").lower()
@@ -150,7 +159,7 @@ class BinaryOption(AbstractProduct):
         self._payoff_amount =self._inputs.get("payoff_amount")    
     
     def __validate_parameters(self):
-        # Check for required parameters based on option type
+        """ Check for required parameters based on option type. """
         if self._option_type in ["one_touch", "no_touch"] and self._barrier is None:
             raise ValueError(f"Barrier value required for {self._option_type} option.")
         if self._option_type in ["double_one_touch", "double_no_touch"] and \
@@ -233,7 +242,7 @@ class Spread(AbstractProduct):
     def price(self) -> float:
         """ Calculate and returns the price of the spread. """
         return self._short_leg_price - self._long_leg_price
-    
+        
     
 class ButterflySpread(AbstractProduct):
     """ A class representing a Butterfly Spread financial product. """
@@ -309,4 +318,31 @@ class KnockInOption(AbstractProduct):
         knock_in_mask = np.any(paths >= self.barrier, axis=1)
         payoffs[~knock_in_mask] = 0 
         return payoffs
-        
+
+
+class ReverseConvertible(AbstractProduct):
+    """ A class representing a Structured Product. """
+
+    def __init__(self, inputs: dict):
+        super().__init__(inputs)
+
+        # Short put
+        self._short_put = self._inputs.get("put")
+        self._short_put_price = self._inputs.get("put price")
+
+        # Long ZC bond
+        self._zc_bond = self._inputs.get("zc bond")
+        self._zc_bond_price = self._inputs.get("zc bond price")
+
+        # Guaranteed Coupon
+        self._coupon = self._inputs.get("coupon")
+
+        # to do : coupon à actualiser
+
+    def payoff(self):
+        # somme payoff put, payoff zc, coupon
+        pass
+
+    def price(self):
+        # somme short put price + long zc price - coupon pv
+        pass
