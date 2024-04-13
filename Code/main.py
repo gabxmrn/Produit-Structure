@@ -302,8 +302,7 @@ call_zs_co_process = process.pricing(call_zs_co)
 print(f"Call (strike 0) : Prix = {round(call_zs_co_process['price'], 2)}")
 
 # Certificat outperformance
-co = CertificatOutperformance(spot=100,
-                              inputs={"zero strike call": call_zs_co, "zero strike call price": call_zs_co_process["price"],
+co = CertificatOutperformance({"zero strike call": call_zs_co, "zero strike call price": call_zs_co_process["price"],
                                "call":call_co, "call price":call_co_process["price"]})
 print(f"Certificat Outperformance price -> {co.price()}")
 
@@ -324,26 +323,32 @@ print("           ")
         - brownianMotion : OK
         - products : OK
         - risk : OK
-        - graphiques :
+        - graphiques : OK
         
             ### Options à barrières : ###
         - brownianMotion : OK
         - products : OK
         - risk :
+        - graphiques :
 
             ### Produits à stratégie optionnelle : ###
         - produits : OK
         - greeks : OK
         - proba d'exercice :
-        - graphiques :
+        - graphiques : OK
 
             ### Options binaires : ###
         - produits : OK
         - risk :
+        - graphiques :
 
             ### Produits Structurés : ###
-        - produits : OK
-        - risk :
+        - produits : OK (Problèmes ???)
+        - greeks : OK
+        - graphiques : OK for payoff & pnl (to do: greeks) 
+
+            ### Stress Tests : ###
+        - ????
 
         Problème : run time error sur le discount factor "compounded"
     

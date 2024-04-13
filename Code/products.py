@@ -269,7 +269,7 @@ class Spread(AbstractProduct):
 
     def price(self) -> float:
         """ Calculate and returns the price of the spread. """
-        return self._short_leg_price - self._long_leg_price
+        return self._long_leg_price - self._short_leg_price
         
     
 class ButterflySpread(AbstractProduct):
@@ -394,7 +394,7 @@ class ReverseConvertible(AbstractProduct):
 
     def payoff(self, spot: float) -> float:
         """ Calculate and returns the payoff of the reverse convertible. """
-        return self._short_put.payoff(spot) + self._zc_bond.__nominal + self._coupon
+        return self._short_put.payoff(spot) + self._bond.nominal + self._coupon
 
     def price(self) -> float:
         """ Calculate and returns the price of the reverse convertible. """
@@ -409,14 +409,12 @@ class CertificatOutperformance(AbstractProduct):
         _zs_call_price (float): price of the call with a zero strike.
         _call (VanillaOption): call object.
         _call_price (float): price of the call.
-        _spot (float): spot of the underlying asset.
     """
 
-    def __init__(self, spot: float, inputs: dict) -> None:
+    def __init__(self, inputs: dict) -> None:
         """ 
         Initialize a Certificat Outperformance object.
         Args: 
-        - spot (float): Spot of the underlying asset.
         - inputs (dict): Input parameters for the product.
         """
         super().__init__(inputs)
@@ -432,10 +430,6 @@ class CertificatOutperformance(AbstractProduct):
         self._call = self._inputs.get("call")
         self._call_price = self._inputs.get("call price")
 
-        self._spot = spot
-        if self._call._strike != self._spot:
-            raise Exception("Input error: The call must be at the money (strike equals spot).")
-
         # Check option type
         if self._zs_call._option_type != "call" or self._call._option_type != "call":
             raise Exception("Input error : the certificat outperformance must be composed of two calls.")
@@ -444,9 +438,9 @@ class CertificatOutperformance(AbstractProduct):
         """ Calculate and returns the participation level of the certificat outperformance. """
         return self._zs_call_price / self._call_price
 
-    def payoff(self) -> float:
+    def payoff(self, spot: float) -> float:
         """ Calculate and returns the payoff of the certificat outperformance. """
-        return self._zs_call.payoff(self._spot) + (1 - self.participation_level()) * self._call.payoff(self._spot)
+        return self._zs_call.payoff(spot) + (1 - self.participation_level()) * self._call.payoff(spot)
 
     def price(self) -> float:
         """ Calculate and returns the price of the certificat outperformance. """

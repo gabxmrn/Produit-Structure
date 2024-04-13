@@ -1,5 +1,5 @@
 from bond import FixedBond
-from products import VanillaOption, Spread, ButterflySpread, OptionProducts
+from products import VanillaOption, Spread, ButterflySpread, OptionProducts, ReverseConvertible, CertificatOutperformance
 from brownianMotion import BrownianMotion
 
 from math import exp, log, sqrt, pi
@@ -329,20 +329,99 @@ class ButterflySpreadRisk:
     
     def delta(self) -> float :
         """Calculate butterfly spread delta."""
-        return -(self._put_spread_greeks.delta() + self._call_spread_greeks.delta())
+        return self._put_spread_greeks.delta() + self._call_spread_greeks.delta()
     
     def gamma(self) -> float :
         """Calculate butterfly spread gamma."""
-        return -(self._put_spread_greeks.gamma() + self._call_spread_greeks.gamma())
+        return self._put_spread_greeks.gamma() + self._call_spread_greeks.gamma()
     
     def vega(self) -> float :
         """Calculate butterfly spread vega."""
-        return -(self._put_spread_greeks.vega() + self._call_spread_greeks.vega())
+        return self._put_spread_greeks.vega() + self._call_spread_greeks.vega()
     
     def theta(self) -> float :
         """Calculate butterfly spread theta."""
-        return -(self._put_spread_greeks.theta() + self._call_spread_greeks.theta())
+        return self._put_spread_greeks.theta() + self._call_spread_greeks.theta()
     
     def rho(self) -> float :
         """Calculate butterfly spread rho."""
-        return -(self._put_spread_greeks.rho() + self._call_spread_greeks.rho())
+        return self._put_spread_greeks.rho() + self._call_spread_greeks.rho()
+
+
+class StructuredProductsRisk:
+    """
+    A class representing risk analysis for structured products.
+    
+    Attributes:
+        _conv
+        _certif
+        _type
+    """
+
+    def __init__(self, type: str, process: BrownianMotion, 
+                 convertible: ReverseConvertible = None, certificat: CertificatOutperformance = None) -> None:
+        """
+        Initialize StructuredProductsRisk object.
+
+        Args:
+            type (str): the type of structured product.
+            process (BrownianMotion): The Brownian motion process.
+            convertible (ReverseConvertible, optionnal): a structured product. Defaults to None.
+            certificat (CertificatOutperformance, optionnal): a structured product. Defaults to None.
+        """
+        
+        self._conv = convertible
+        self._certif = certificat
+
+        self._type = type.lower()
+        if self._type == "reverse convertible":
+            self._conv_greeks = OptionRisk(self._conv._short_put, process)
+        elif self._type == "certificat outperformance":
+            self._zs_call_greeks = OptionRisk(self._certif._zs_call, process)
+            self._call_greeks = OptionRisk(self._certif._call, process)
+        else:
+            raise Exception("Input error: Please enter a certificat outperformance or a reverse convertible.")
+
+    def greeks(self) -> str : 
+        """Return all butterfly spread greeks."""
+        return f"Delta = {round(self.delta(), 2)}, gamma = {round(self.gamma(), 2)}, vega = {round(self.vega(), 2)}, theta = {round(self.theta(), 2)}, rho = {round(self.rho(), 2)}"
+    
+    def delta(self) -> float :    
+        """Calculate a structured product delta."""
+        if self._type == "reverse convertible":
+            return self._conv_greeks.delta
+        else:
+            return self._zs_call_greeks.delta() + (1 - self._certif.participation_level) * self._call_greeks.delta()        
+
+    def gamma(self) -> float :
+        """Calculate a structured product gamma."""
+        if self._type == "reverse convertible":
+            return self._conv_greeks.gamma
+        else:
+            return self._zs_call_greeks.gamma() + (1 - self._certif.participation_level) * self._call_greeks.gamma()        
+        
+
+    def vega(self) -> float :
+        """Calculate a structured product vega."""
+        if self._type == "reverse convertible":
+            return self._conv_greeks.vega
+        else:
+            return self._zs_call_greeks.vega() + (1 - self._certif.participation_level) * self._call_greeks.vega()        
+        
+
+    def theta(self) -> float :
+        """Calculate a structured product theta."""
+        if self._type == "reverse convertible":
+            return self._conv_greeks.theta
+        else:
+            return self._zs_call_greeks.theta() + (1 - self._certif.participation_level) * self._call_greeks.theta()        
+        
+
+    def rho(self) -> float :
+        """Calculate a structured product rho."""
+        if self._type == "reverse convertible":
+            return self._conv_greeks.rho
+        else:
+            return self._zs_call_greeks.rho() + (1 - self._certif.participation_level) * self._call_greeks.rho()        
+        
+
