@@ -11,7 +11,7 @@ class AbstractProduct:
     _product_name = "product"
     _inputs = None
 
-    def __init__(self, inputs:dict): 
+    def __init__(self, inputs: dict) -> None: 
         """ 
         Initialize an AbstractProduct object.
         Args: 
@@ -20,7 +20,7 @@ class AbstractProduct:
         self._inputs = inputs
 
 
-    def payoff(self, spot):
+    def payoff(self, spot: float) -> float:
         """
         Method to calculate the payoff of the product.
 
@@ -35,9 +35,14 @@ class AbstractProduct:
 
 
 class VanillaOption(AbstractProduct):
-    """ A class representing a Vanilla Option (Call/Put) option financial product. """
+    """ A class representing a Vanilla Option (Call/Put) option financial product.
+    Arguments:
+        _underlying (str): type of underlying asset for the option.
+        _strike (float): strike of the option.
+        _optio_type (str): type of option (call or put).
+    """
     
-    def __init__(self, underlying:str, inputs:dict) -> None :
+    def __init__(self, underlying: str, inputs: dict) -> None :
         """ 
         Initialize a VanillaOption object.
         Args: 
@@ -48,7 +53,8 @@ class VanillaOption(AbstractProduct):
         self._underlying = underlying.lower()
         self._strike = self._get_strike()
         self._option_type = self._inputs.get("option_type").lower()
-    def _get_strike(self):
+
+    def _get_strike(self) -> float:
         """ Get the strike price. """
         if self._underlying == FOREX :
             if not "domestic_rate" in self._inputs :
@@ -59,7 +65,7 @@ class VanillaOption(AbstractProduct):
         else : 
             return self._inputs["strike"]
                 
-    def payoff(self, spot):
+    def payoff(self, spot: float) -> float:
         """ Calculate and returns the payoff of the option. """
         if self._option_type == CALL : 
             return np.maximum(spot - self._strike, 0)
@@ -70,9 +76,17 @@ class VanillaOption(AbstractProduct):
 
 
 class OptionProducts(AbstractProduct):
-    """ A class representing a Straddle or a Strangle financial product. """
+    """ A class representing a Straddle or a Strangle financial product.
+    Arguments:
+        _call (VanillaOption) : call component of the strategy.
+        _call_price (float): price of the call.
+        _put (VanillaOption): put component of the strategy.
+        _put_price (float): price of the put.
+        _type (str): type of option strategy (straddle, strangle, strip, strap).
+        _long_short (str) : if the product is long or short.
+    """
 
-    def __init__(self, type:str, long_short:str, inputs: dict) -> None:
+    def __init__(self, type: str, long_short: str, inputs: dict) -> None:
         """ 
         Initialize a Spread object.
         Args: 
@@ -112,7 +126,7 @@ class OptionProducts(AbstractProduct):
             if self._call._strike <= self._put._strike:
                 raise Exception("Input Error : For a strangle, the call strike should be higher than the put strike.")
 
-    def payoff(self, spot:float) -> float:
+    def payoff(self, spot: float) -> float:
         """ Calculate and returns the payoff of an option product. """
         if self._type == "straddle" or self._type == "strangle":
             payoff = self._call.payoff(spot) + self._put.payoff(spot)
@@ -142,9 +156,17 @@ class OptionProducts(AbstractProduct):
 
 
 class BinaryOption(AbstractProduct):
-    """ A class representing binary option financial product. """
+    """ A class representing binary option financial product.
+    Arguments:
+        _strike (float): strike of the financial product.
+        _option_type (str): binary option type (binary call, binary put, one touch, no touch, double_one_touch, double_no_touch).
+        _barrier (float) : barrier of the option.
+        _lower_barrier (float) : lower barrier of the option.
+        _upper_barrier (float) : upper barrier of the option.
+        _payoff_amount (float): payoff amount.
+    """
 
-    def __init__(self, inputs:dict) -> None:
+    def __init__(self, inputs: dict) -> None:
         """ 
         Initialize a Spread object.
         Args: 
@@ -166,7 +188,7 @@ class BinaryOption(AbstractProduct):
            (self._lower_barrier is None or self._upper_barrier is None):
             raise ValueError(f"Both lower and upper barrier values required for {self._option_type} option.")
     
-    def payoff(self, spot:float)-> float:
+    def payoff(self, spot: float)-> float:
         """
         Calculates the payoff of the binary option based on the final spot price.
 
@@ -196,9 +218,16 @@ class BinaryOption(AbstractProduct):
 
 
 class Spread(AbstractProduct):
-    """ A class representing a Spread (Call/Put) option financial product. """
+    """ A class representing a Spread (Call/Put) option financial product.
+    Attributes :
+        _long_leg (VanillaOption) : long leg of the spread.
+        _long_leg_price (float) : price of the long leg of the spread.
+        _short_leg (VanillaOption): short leg of the spread.
+        _short_leg_price (float) : price of the short leg of the spread.
+        _type : if the spread is a call or a put spread.
+    """
     
-    def __init__(self, type:str, inputs: dict) -> None:
+    def __init__(self, type: str, inputs: dict) -> None:
         """ 
         Initialize a Spread object.
         Args: 
@@ -235,7 +264,7 @@ class Spread(AbstractProduct):
         else:
             raise Exception("Input error : Please enter 'put spread' or 'call spread'.")
 
-    def payoff(self, spot:float) -> float:
+    def payoff(self, spot: float) -> float:
         """ Calculate and returns the payoff of the spread. """
         return self._long_leg.payoff(spot) - self._short_leg.payoff(spot)
 
@@ -245,7 +274,11 @@ class Spread(AbstractProduct):
         
     
 class ButterflySpread(AbstractProduct):
-    """ A class representing a Butterfly Spread financial product. """
+    """ A class representing a Butterfly Spread financial product.
+    Attributes :
+        _put_spread (Spread): Put spread part of the butterfly.
+        _call_spread(Spread): Call spread part of the butterfly.
+    """
 
     def __init__(self, inputs: dict) -> None:
         """ 
@@ -269,7 +302,7 @@ class ButterflySpread(AbstractProduct):
         if self._put_spread._short_leg._strike != self._call_spread._short_leg._strike:
             raise Exception("Input error : The strike of the put spread short leg should be equal to the strike of the call spread short leg.")
 
-    def payoff(self, spot:float) -> float:
+    def payoff(self, spot: float) -> float:
         """ Calculate and returns the payoff of the butterfly spread. """
         return self._put_spread.payoff(spot) + self._call_spread.payoff(spot)
 
@@ -279,9 +312,13 @@ class ButterflySpread(AbstractProduct):
 
 
 class KnockOutOption(AbstractProduct):
-    """ A class representing a KO option financial product. """
+    """ A class representing a KO option financial product.
+    Attributes :
+        barrier (float): barrier of the strike.
+        strike (float): option strike.
+    """
     
-    def __init__(self, inputs):
+    def __init__(self, inputs: dict) -> None:
         """ 
         Initialize a KnockOutOption object.
         Args: 
@@ -291,7 +328,7 @@ class KnockOutOption(AbstractProduct):
         self.barrier = inputs['barrier']
         self.strike = inputs['strike']
     
-    def payoff(self, paths):
+    def payoff(self, paths) -> float:
         """ Calculates the payoff considering the barrier. 'paths' is a NumPy array of simulated end prices """
         payoffs = np.maximum(paths - self.strike, 0)  
         knock_out_mask = np.any(paths >= self.barrier, axis=1)
@@ -300,9 +337,13 @@ class KnockOutOption(AbstractProduct):
 
 
 class KnockInOption(AbstractProduct):
-    """ A class representing a KI option financial product. """
+    """ A class representing a KI option financial product.
+    Attributes :
+        barrier (float): barrier of the strike.
+        strike (float): option strike.
+    """
     
-    def __init__(self, inputs):
+    def __init__(self, inputs: dict) -> None:
         """ 
         Initialize a KnockInOption object.
         Args: 
@@ -312,7 +353,7 @@ class KnockInOption(AbstractProduct):
         self.barrier = inputs['barrier']
         self.strike = inputs['strike']
 
-    def payoff(self, paths):
+    def payoff(self, paths) -> float:
         """ For KI options, the option is only valid if the barrier is breached """
         payoffs = np.maximum(paths[:, -1] - self.strike, 0)  
         knock_in_mask = np.any(paths >= self.barrier, axis=1)
@@ -321,28 +362,93 @@ class KnockInOption(AbstractProduct):
 
 
 class ReverseConvertible(AbstractProduct):
-    """ A class representing a Structured Product. """
+    """ A class representing a Structured Product.
+    Attributes:
+        _short_put (VanillaOption): Put.
+        _short_put_price (float): Price of the put.
+        _bond (FixedBond): Bond of same caracteristics as the put.
+        _bond_price (float): Bond price.
+        _coupon (float) : additional coupon provided.
+     """
 
     def __init__(self, inputs: dict):
+        """ 
+        Initialize a Reverse Convertible object.
+        Args: 
+        - inputs (dict): Input parameters for the product.
+        """
         super().__init__(inputs)
 
         # Short put
         self._short_put = self._inputs.get("put")
         self._short_put_price = self._inputs.get("put price")
 
-        # Long ZC bond
-        self._zc_bond = self._inputs.get("zc bond")
-        self._zc_bond_price = self._inputs.get("zc bond price")
+        if self._short_put._option_type != "put":
+            raise Exception("Input error: please enter a put option.")
+
+        # Long bond
+        self._bond = self._inputs.get("bond")
+        self._bond_price = self._inputs.get("bond price")
 
         # Guaranteed Coupon
         self._coupon = self._inputs.get("coupon")
 
-        # to do : coupon à actualiser
+    def payoff(self, spot: float) -> float:
+        """ Calculate and returns the payoff of the reverse convertible. """
+        return self._short_put.payoff(spot) + self._zc_bond.__nominal + self._coupon
 
-    def payoff(self):
-        # somme payoff put, payoff zc, coupon
-        pass
+    def price(self) -> float:
+        """ Calculate and returns the price of the reverse convertible. """
+        coupon_pv = self._coupon  * np.exp(- self._bond.rate.discount_factor(self._bond.maturity)) 
+        return self._bond.price() - self._short_put_price - coupon_pv
 
-    def price(self):
-        # somme short put price + long zc price - coupon pv
-        pass
+
+class CertificatOutperformance(AbstractProduct):
+    """ A class representing a Certificat Outperformance financial product.
+    Arguments:
+        _zs_call (VanillaOption): zero strike call object.
+        _zs_call_price (float): price of the call with a zero strike.
+        _call (VanillaOption): call object.
+        _call_price (float): price of the call.
+        _spot (float): spot of the underlying asset.
+    """
+
+    def __init__(self, spot: float, inputs: dict) -> None:
+        """ 
+        Initialize a Certificat Outperformance object.
+        Args: 
+        - spot (float): Spot of the underlying asset.
+        - inputs (dict): Input parameters for the product.
+        """
+        super().__init__(inputs)
+
+        # Zero-strike call (long)
+        self._zs_call = self._inputs.get("zero strike call")
+        self._zs_call_price = self._inputs.get("zero strike call price")
+
+        if self._zs_call._strike != 0:
+            raise Exception("Input error: The strike of this call must be zero.")
+        
+        # ATM Call (long)
+        self._call = self._inputs.get("call")
+        self._call_price = self._inputs.get("call price")
+
+        self._spot = spot
+        if self._call._strike != self._spot:
+            raise Exception("Input error: The call must be at the money (strike equals spot).")
+
+        # Check option type
+        if self._zs_call._option_type != "call" or self._call._option_type != "call":
+            raise Exception("Input error : the certificat outperformance must be composed of two calls.")
+        
+    def participation_level(self) -> float:
+        """ Calculate and returns the participation level of the certificat outperformance. """
+        return self._zs_call_price / self._call_price
+
+    def payoff(self) -> float:
+        """ Calculate and returns the payoff of the certificat outperformance. """
+        return self._zs_call.payoff(self._spot) + (1 - self.participation_level()) * self._call.payoff(self._spot)
+
+    def price(self) -> float:
+        """ Calculate and returns the price of the certificat outperformance. """
+        return self._zs_call_price + (1 - self.participation_level()) * self._call_price

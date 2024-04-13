@@ -126,7 +126,6 @@ class FixedBond:
         return coupons
 
 
-
 class ZcBond:
     """
     A class representing a zero-coupon bond.

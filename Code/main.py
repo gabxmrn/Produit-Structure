@@ -3,31 +3,31 @@ from maturity import Maturity
 from rate import Rate
 from bond import FixedBond, ZcBond
 from brownianMotion import BrownianMotion
-from products import VanillaOption, KnockInOption, KnockOutOption, BinaryOption, Spread, OptionProducts, ButterflySpread
+from products import VanillaOption, KnockInOption, KnockOutOption, BinaryOption, Spread, OptionProducts, ButterflySpread, ReverseConvertible, CertificatOutperformance
 
 from riskAnalysis import BondRisk, OptionRisk, OptionProductsRisk, SpreadRisk, ButterflySpreadRisk
 
 
 ########################################### TEST MATURITY & RATE : ###########################################
 
-# # maturity = Maturity(maturity_in_years=4.5, day_count_convention="ACT/365")
-# maturity = Maturity(begin_date=datetime(2024, 3, 7), end_date=datetime(2025, 3, 7), day_count_convention="ACT/360")
-# print(f"Maturité (en année) = {round(maturity.maturity(), 2)}")
+# maturity = Maturity(maturity_in_years=4.5, day_count_convention="ACT/365")
+maturity = Maturity(begin_date=datetime(2024, 3, 7), end_date=datetime(2025, 3, 7), day_count_convention="ACT/360")
+print(f"Maturité (en année) = {round(maturity.maturity(), 2)}")
 
-# # rate = Rate(rate=0.03, rate_type="continuous")
-# curve = {Maturity(1.0/365.0):0.0075,
-#         Maturity(1.0/12.0):0.01,
-#         Maturity(3.0/12.0):0.015,
-#         Maturity(6.0/12.0):0.0175,
-#         Maturity(1.0):0.02,
-#         Maturity(5.0):0.03}
-# rate = Rate(rate_type="compounded", rate_curve=curve, interpol_type="linear")
-# print(f"Taux = {round(rate.rate(maturity), 2)}")
+# rate = Rate(rate=0.03, rate_type="continuous")
+curve = {Maturity(1.0/365.0):0.0075,
+        Maturity(1.0/12.0):0.01,
+        Maturity(3.0/12.0):0.015,
+        Maturity(6.0/12.0):0.0175,
+        Maturity(1.0):0.02,
+        Maturity(5.0):0.03}
+rate = Rate(rate_type="compounded", rate_curve=curve, interpol_type="linear")
+print(f"Taux = {round(rate.rate(maturity), 2)}")
 
-# print("           ")
+print("           ")
 
 
-# ################################################ TEST BONDS : ################################################
+################################################ TEST BONDS : ################################################
 
 # #### Zero Coupon  Bond : 
 # zc_bond = ZcBond(rate=rate, maturity=maturity, nominal=100)
@@ -47,14 +47,14 @@ from riskAnalysis import BondRisk, OptionRisk, OptionProductsRisk, SpreadRisk, B
 
 #### Test normal Call/Put : 
 
-# process = BrownianMotion({
-#     "nb_simulations":1000,
-#     "nb_steps":1000,
-#     "spot":100,
-#     "rates":Rate(0.03, rate_type="compounded"),
-#     "volatility":0.2,
-#     "maturity":Maturity(0.5)
-# })
+process = BrownianMotion({
+    "nb_simulations":1000,
+    "nb_steps":1000,
+    "spot":100,
+    "rates":Rate(0.03, rate_type="compounded"),
+    "volatility":0.2,
+    "maturity":Maturity(0.5)
+})
 
 # call_product = VanillaOption("no dividend share", {"option_type":"call", "strike":102})
 # call_process = process.pricing(call_product) 
@@ -104,15 +104,6 @@ from riskAnalysis import BondRisk, OptionRisk, OptionProductsRisk, SpreadRisk, B
 # print("           ")
 
 ########################################### TEST OPTION STRATEGY : ###########################################
-
-process = BrownianMotion({
-    "nb_simulations":1000,
-    "nb_steps":1000,
-    "spot":100,
-    "rates":Rate(0.03, rate_type="compounded"),
-    "volatility":0.2,
-    "maturity":Maturity(0.5)
-})
 
 # ############################# CALL SPREAD
 
@@ -274,6 +265,46 @@ process = BrownianMotion({
 # KI_option = process.pricing(barrier_KI, monte_carlo=True)
 # print(f"KI Option : Prix = {round(KI_option['price'], 2)}, proba d'exercice = {round(KI_option['proba'], 2)}")
 
+########################################### TEST STRUCTURED PRODUCTS : #######################################
+
+############################# REVERSE CONVERTIBLE
+
+# Put
+put_rc = VanillaOption("no dividend share", {"option_type":"put", "strike":102})
+put_rc_process = process.pricing(put_rc)
+print(f"Put (strike 102) : Prix = {round(put_rc_process['price'], 2)}")
+
+# Bond
+bond_rc = FixedBond(coupon_rate=0.1, maturity=maturity, nominal=100, nb_coupon=22, rate=rate)
+print(f"Prix de l'obligation à taux fixe = {round(bond_rc.price(), 2)}")
+
+# Reverse Convertible
+rc = ReverseConvertible({"put":put_rc, "put price": put_rc_process["price"], 
+                         "bond":bond_rc, "bond price": bond_rc.price(),
+                         "coupon":0.05})
+print(f"Reverse Convertible price -> {rc.price()}")
+
+print("           ")
+
+############################# CERTIFICAT OUTPERFORMANCE
+
+# Call
+call_co = VanillaOption("no dividend share", {"option_type":"call", "strike":100})
+call_co_process = process.pricing(call_co)
+print(f"Call (strike 100) : Prix = {round(call_co_process['price'], 2)}")
+
+# Zero strike call
+call_zs_co = VanillaOption("no dividend share", {"option_type":"call", "strike":0})
+call_zs_co_process = process.pricing(call_zs_co)
+print(f"Call (strike 0) : Prix = {round(call_zs_co_process['price'], 2)}")
+
+# Certificat outperformance
+co = CertificatOutperformance(spot=100,
+                              inputs={"zero strike call": call_zs_co, "zero strike call price": call_zs_co_process["price"],
+                               "call":call_co, "call price":call_co_process["price"]})
+print(f"Certificat Outperformance price -> {co.price()}")
+
+print("           ")
 
 """
     Résumé : 
