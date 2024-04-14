@@ -95,7 +95,19 @@ print("           ")
 
 ########################################### TEST OPTION STRATEGY : ###########################################
 
-###############################
+#### SPREAD
+
+print("CALL SPREAD : ")
+call_spread = Run().spread(inputs={**inputs_dict, **{"underlying":"dividend share", "option_type":"call", "dividend":0.02, "short_strike":105, "long_strike":95}}) 
+print(call_spread)
+st_call_spread = stress_test.spread(inputs={**inputs_dict, **{"underlying":"dividend share", "option_type":"call", "dividend":0.02, "short_strike":105, "long_strike":95}})
+print(st_call_spread)
+
+print("PUT SPREAD : ")
+put_spread = Run().spread(inputs={**inputs_dict, **{"underlying":"forex rate", "option_type":"put", "forward_rate":0.2, "domestic_rate":0.1, "short_strike":105, "long_strike":110}})
+print(put_spread)
+st_put_spread = stress_test.spread(inputs={**inputs_dict, **{"underlying":"forex rate", "option_type":"put", "forward_rate":0.2, "domestic_rate":0.1, "short_strike":105, "long_strike":110}})
+print(st_put_spread)
 
 print("           ")
 

@@ -1,9 +1,9 @@
 import datetime
 
 from bond import FixedBond, ZcBond
-from riskAnalysis import BondRisk, OptionRisk
 from brownianMotion import BrownianMotion
-from products import VanillaOption, BinaryOption, KnockOutOption, KnockInOption
+from products import VanillaOption, Spread, BinaryOption, KnockOutOption, KnockInOption
+from riskAnalysis import BondRisk, OptionRisk, SpreadRisk
 
 ### Option type : 
 SHARE_NO_DIV, SHARE_DIV  = "no dividend share", "dividend share"
@@ -54,7 +54,7 @@ class Run :
         strike = self._input("strike", inputs)
         option_type = self._input("option_type", inputs)
         
-        process = process = BrownianMotion(inputs=inputs)
+        process = BrownianMotion(inputs=inputs)
        
         if underlying == FOREX :
             # For options on exchange rates:
@@ -78,8 +78,39 @@ class Run :
                 "theta":round(risks.theta(), 2), 
                 "rho":round(risks.rho(), 2)}
         
-    def optional_strategy(self, inputs:dict) -> dict :
-        pass 
+    def spread(self, inputs:dict) -> dict :
+        option_type = self._input("option_type", inputs)
+        short_strike = self._input("short_strike", inputs)
+        long_strike = self._input("long_strike", inputs)
+        underlying = self._input("underlying", inputs)
+        
+        if underlying == FOREX :
+            # For options on exchange rates:
+            domestic_rate = self._input("domestic_rate", inputs)
+            maturity = self._input("maturity", inputs)
+            short_option = VanillaOption(underlying=underlying, inputs={"option_type":option_type, "strike":short_strike, "domestic_rate":domestic_rate, "maturity":self._input("maturity", inputs)}) 
+            long_option = VanillaOption(underlying=underlying, inputs={"option_type":option_type, "strike":long_strike, "domestic_rate":domestic_rate, "maturity":self._input("maturity", inputs)}) 
+            
+        else :
+            # For every others option type :
+            short_option = VanillaOption(underlying=underlying, inputs={"option_type":option_type, "strike":short_strike}) 
+            long_option = VanillaOption(underlying=underlying, inputs={"option_type":option_type, "strike":long_strike}) 
+        
+        process = BrownianMotion(inputs=inputs)
+        short_process = process.pricing(short_option)
+        long_process = process.pricing(long_option)
+        
+        spread_type = option_type + " spread"
+        spread = Spread(spread_type, {"long leg": long_option, "long leg price":long_process['price'], "short leg": short_option, "short leg price": short_process['price']})
+        risks = SpreadRisk(spread, process)
+        
+        return {"price":round(spread.price(), 2), 
+                "delta":round(risks.delta(), 2), 
+                "gamma":round(risks.gamma(), 2), 
+                "vega":round(risks.vega(), 2), 
+                "theta":round(risks.theta(), 2), 
+                "rho":round(risks.rho(), 2)}
+        
     
     def binary_option(self, inputs:dict) -> dict :
         strike = self._input("strike", inputs)
@@ -165,6 +196,19 @@ class StressTest:
         return {"price":round(new["price"] - old["price"], 2), 
                 "proba":round(new["proba"] - old["proba"], 2), 
                 "payoff":round(new["payoff"] - old["payoff"], 2), 
+                "delta":round(new["delta"] - old["delta"], 2), 
+                "gamma":round(new["gamma"] - old["gamma"], 2), 
+                "vega":round(new["vega"] - old["vega"], 2), 
+                "theta":round(new["theta"] - old["theta"], 2), 
+                "rho":round(new["rho"] - old["rho"], 2)}
+        
+    def spread(self, inputs:dict) -> dict :      
+        new_inputs = self._get_new_inputs(inputs)
+        
+        old = Run().vanilla_option(inputs=inputs)
+        new = Run().vanilla_option(inputs=new_inputs)
+    
+        return {"price":round(new["price"] - old["price"], 2), 
                 "delta":round(new["delta"] - old["delta"], 2), 
                 "gamma":round(new["gamma"] - old["gamma"], 2), 
                 "vega":round(new["vega"] - old["vega"], 2), 
