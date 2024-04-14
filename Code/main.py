@@ -8,95 +8,6 @@ from products import VanillaOption, KnockInOption, KnockOutOption, BinaryOption,
 from riskAnalysis import BondRisk, OptionRisk, OptionProductsRisk, SpreadRisk, ButterflySpreadRisk
 
 
-########################################### TEST MATURITY & RATE : ###########################################
-
-#### MATURITY
-
-maturity = Maturity(begin_date=datetime(2024, 3, 7), end_date=datetime(2025, 3, 7), day_count_convention="ACT/360")
-print(f"Maturité (en année) = {round(maturity.maturity(), 2)}")
-
-#### RATE
-
-curve = {Maturity(1.0/365.0):0.0075,
-        Maturity(1.0/12.0):0.01,
-        Maturity(3.0/12.0):0.015,
-        Maturity(6.0/12.0):0.0175,
-        Maturity(1.0):0.02,
-        Maturity(5.0):0.03}
-rate = Rate(rate_type="compounded", rate_curve=curve, interpol_type="linear")
-print(f"Taux = {round(rate.rate(maturity), 2)}")
-
-print("           ")
-
-################################################ TEST BONDS : ################################################
-
-#### ZERO COUPON BOND
-
-zc_bond = ZcBond(rate=rate, maturity=maturity, nominal=100)
-print(f"Prix zero coupon bond = {round(zc_bond.price(), 2)}")
-
-#### FIXED BOND
-
-fixed_bond = FixedBond(coupon_rate=0.1, maturity=maturity, nominal=100, nb_coupon=22, rate=rate)
-print(f"Prix de l'obligation à taux fixe = {round(fixed_bond.price(), 2)}")
-print(f"YTM de l'obligation à taux fixe = {round(fixed_bond.ytm(), 2)}")
-bond_risk = BondRisk(bond=fixed_bond)
-print(f"Duration de l'obligation à taux fixe = {round(bond_risk.duration(), 2)}")
-print(f"Convexité de l'obligation à taux fixe = {round(bond_risk.convexity(), 2)}")
-
-print("           ")
-
-########################################### TEST VANILLA OPTIONS : ###########################################
-
-#### CALL / PUT
-
-
-call_product = VanillaOption("no dividend share", {"option_type":"call", "strike":102})
-call_process = process.pricing(call_product) 
-call_greeks = OptionRisk(call_product, process)
-
-put_product = VanillaOption("non capitalized index", {"option_type":"put", "strike":102})
-put_process = process.pricing(put_product)
-put_greeks = OptionRisk(put_product, process)
-
-print(f"Call : Prix = {round(call_process['price'], 2)}, proba d'exercice = {round(call_process['proba'], 2)}, Payoff = {call_product.payoff(call_process['price'])}")
-print(f"Greeks -> {call_greeks.greeks()}")
-print(f"Put : Prix = {round(put_process['price'])}, proba d'exercice = {round(put_process['proba'])}, Payoff = {put_product.payoff(put_process['price'])}")
-print(f"Greeks -> {put_greeks.greeks()}")
-
-print("           ")
-
-# TEST SHARE + FX OPTIONS
-
-process_share = BrownianMotion({
-    "nb_simulations":1000,
-    "nb_steps":50,
-    "spot":100,
-    "rates":Rate(0.03, rate_type="continuous"),
-    "volatility":0.2,
-    "maturity":Maturity(0.5), 
-    "dividend":0.02})
-call_share = VanillaOption("dividend share", {"option_type":"call", "strike":102})
-call_process_share = process_share.pricing(call_share) 
-greeks_share = OptionRisk(call_share, process_share)
-print(f"Share Call : Prix = {round(call_process_share['price'], 2)}, proba d'exercice = {round(call_process_share['proba'], 2)}, Payoff = {round(call_share.payoff(call_process_share['price']), 2)}")
-print(f"Greeks -> {greeks_share.greeks()}")
-
-process_fx = BrownianMotion({
-    "nb_simulations":1000,
-    "nb_steps":1000,
-    "spot":100,
-    "rates":Rate(0.03, rate_type="continuous"),
-    "volatility":0.2,
-    "maturity":Maturity(0.5), 
-    "forward_rate":0.2})
-put_fx = VanillaOption("forex rate", {"option_type":"put", "strike":102, "domestic_rate":0.1, "maturity":Maturity(0.5)})
-put_process_fx = process_fx.pricing(put_fx) 
-greeks_fx = OptionRisk(put_fx, process_fx)
-print(f"Forex Put : Prix = {round(put_process_fx['price'], 2)}, proba d'exercice = {round(put_process_fx['proba'], 2)}, Payoff = {round(put_fx.payoff(put_process_fx['price']), 2)}")
-print(f"Greeks -> {greeks_fx.greeks()}")
-
-print("           ")
 
 ########################################### TEST OPTION STRATEGY : ###########################################
 
@@ -228,37 +139,6 @@ strap_greeks = OptionProductsRisk(strap, process)
 print(f"Greeks -> {strap_greeks.greeks()}")
 
 print("           ")
-
-########################################## BINARY OPTIONS #####################################
-
-high_low = BinaryOption({"strike":102, "option_type":"binary_call", "payoff_amount": 120})
-high_low_process = process.pricing(high_low)
-print(f"Prix du high_low : {round(high_low_process['price'],2)}")
-print(f"proba du high_low : {round(high_low_process['proba'],2)}")
-
-one_touch = BinaryOption({"strike":102, "option_type":"one_touch", "payoff_amount": 120, "barrier":110})
-one_touch_process = process.pricing(one_touch)
-print(f"Prix du one_touch : {round(one_touch_process['price'],2)}")
-print(f"proba du one_touch : {round(one_touch_process['proba'],2)}")
-
-double_one_touch =  BinaryOption({"strike":102, "option_type":"double_one_touch", "payoff_amount": 120, "upper_barrier":110, "lower_barrier":90})
-double_one_touch_process = process.pricing(double_one_touch)
-print(f"Prix du double_one_touch : {round(double_one_touch_process['price'],2)}")
-print(f"proba du double_one_touch : {round(double_one_touch_process['proba'],2)}")
-
-print("           ")
-
-########################################### TEST BARRIER OPTIONS : ###########################################
-
-# Test Knock Out Option (KO) : 
-barrier_KO = KnockOutOption({"barrier":120, "strike":100})
-KO_option = process.pricing(barrier_KO, monte_carlo=True)
-print(f"KO Option : Prix = {round(KO_option['price'], 2)}, proba d'exercice = {round(KO_option['proba'], 2)}")
-
-# Test Knock In Option (KI) : 
-barrier_KI= KnockInOption({"barrier":120, "strike":100})
-KI_option = process.pricing(barrier_KI, monte_carlo=True)
-print(f"KI Option : Prix = {round(KI_option['price'], 2)}, proba d'exercice = {round(KI_option['proba'], 2)}")
 
 ########################################### TEST STRUCTURED PRODUCTS : #######################################
 
