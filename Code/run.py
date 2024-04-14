@@ -2,8 +2,8 @@ import datetime
 
 from bond import FixedBond, ZcBond
 from brownianMotion import BrownianMotion
-from products import VanillaOption, Spread, BinaryOption, KnockOutOption, KnockInOption
-from riskAnalysis import BondRisk, OptionRisk, SpreadRisk
+from products import VanillaOption, Spread, ButterflySpread, OptionProducts, BinaryOption, KnockOutOption, KnockInOption, ReverseConvertible, CertificatOutperformance
+from riskAnalysis import BondRisk, OptionRisk, SpreadRisk, ButterflySpreadRisk, OptionProductsRisk
 
 ### Option type : 
 SHARE_NO_DIV, SHARE_DIV  = "no dividend share", "dividend share"
@@ -12,6 +12,7 @@ CAPITALIZED_INDEX, NON_CAPITALIZED_INDEX = "capitalized index", "non capitalized
 BINARY_PUT, BINARY_CALL = "binary_call", "binary_put"
 ONE_TOUCH, NO_TOUCH, DOUBLE_ONE_TOUCH, DOUBLE_NO_TOUCH = "one_touch", "no_touch", "double_one_touch", "double_no_touch"
 KNOCKOUT, KNOCKIN = "knock_out", "knock_in"
+STRADDLE, STRANGLE, STRIP, STRAP = "straddle", "strangle", "strip", "strap"
 
 
 class Run :
@@ -110,6 +111,75 @@ class Run :
                 "vega":round(risks.vega(), 2), 
                 "theta":round(risks.theta(), 2), 
                 "rho":round(risks.rho(), 2)}
+    
+    def butterfly(self, inputs:dict) -> dict :
+        strike_1 = self._input("strike_1", inputs)
+        strike_2 = self._input("strike_2", inputs)
+        strike_3 = self._input("strike_3", inputs)
+        underlying = self._input("underlying", inputs)
+        
+        if underlying == FOREX :
+            # For options on exchange rates:
+            domestic_rate = self._input("domestic_rate", inputs)
+            maturity = self._input("maturity", inputs)
+            short_call = VanillaOption(underlying=underlying, inputs={"option_type":"call", "strike":strike_2, "domestic_rate":domestic_rate, "maturity":self._input("maturity", inputs)}) 
+            long_call = VanillaOption(underlying=underlying, inputs={"option_type":"call", "strike":strike_1, "domestic_rate":domestic_rate, "maturity":self._input("maturity", inputs)})
+            short_put = VanillaOption(underlying=underlying, inputs={"option_type":"put", "strike":strike_2, "domestic_rate":domestic_rate, "maturity":self._input("maturity", inputs)}) 
+            long_put = VanillaOption(underlying=underlying, inputs={"option_type":"put", "strike":strike_3, "domestic_rate":domestic_rate, "maturity":self._input("maturity", inputs)})             
+        else :
+            # For every others option type :
+            short_call = VanillaOption(underlying=underlying, inputs={"option_type":"call", "strike":strike_2}) 
+            long_call = VanillaOption(underlying=underlying, inputs={"option_type":"call", "strike":strike_1})
+            short_put = VanillaOption(underlying=underlying, inputs={"option_type":"put", "strike":strike_2}) 
+            long_put = VanillaOption(underlying=underlying, inputs={"option_type":"put", "strike":strike_3}) 
+        
+        process = BrownianMotion(inputs=inputs)
+        short_call_process, long_call_process = process.pricing(short_call), process.pricing(long_call)
+        short_put_process, long_put_process = process.pricing(short_put), process.pricing(long_put)
+        call_spread = Spread("call spread", {"long leg": long_call, "long leg price":long_call_process['price'], "short leg": short_call, "short leg price": short_call_process['price']})
+        put_spread = Spread("put spread", {"long leg": long_put, "long leg price":long_put_process['price'], "short leg": short_put, "short leg price": short_put_process['price']})
+        butterfly = ButterflySpread({"put spread":put_spread, "call spread":call_spread})
+        risks = ButterflySpreadRisk(butterfly, process)
+        
+        return {"price":round(butterfly.price(), 2), 
+                "delta":round(risks.delta(), 2), 
+                "gamma":round(risks.gamma(), 2), 
+                "vega":round(risks.vega(), 2), 
+                "theta":round(risks.theta(), 2), 
+                "rho":round(risks.rho(), 2)}
+        
+    def option_strategy(self, inputs:dict) -> dict :
+        call_strike = self._input("call_strike", inputs)
+        put_strike = self._input("put_strike", inputs)
+        underlying = self._input("underlying", inputs)
+        option_type = self._input("option_type", inputs).lower()
+        option_position = self._input("option_position", inputs).lower()
+        
+        if underlying == FOREX :
+            # For options on exchange rates:
+            domestic_rate = self._input("domestic_rate", inputs)
+            maturity = self._input("maturity", inputs)
+            call = VanillaOption(underlying=underlying, inputs={"option_type":"call", "strike":call_strike, "domestic_rate":domestic_rate, "maturity":self._input("maturity", inputs)}) 
+            put = VanillaOption(underlying=underlying, inputs={"option_type":"put", "strike":put_strike, "domestic_rate":domestic_rate, "maturity":self._input("maturity", inputs)}) 
+            
+        else :
+            # For every others option type :
+            call = VanillaOption(underlying=underlying, inputs={"option_type":"call", "strike":call_strike}) 
+            put = VanillaOption(underlying=underlying, inputs={"option_type":"put", "strike":put_strike}) 
+        
+        process = BrownianMotion(inputs=inputs)
+        call_process = process.pricing(call)
+        put_process = process.pricing(put)
+        
+        strategy = OptionProducts(option_type, option_position, {"call":call,"call price": call_process['price'],"put":put,"put price":put_process['price']})
+        risks = OptionProductsRisk(strategy, process)
+        
+        return {"price":round(strategy.price(), 2), 
+                "delta":round(risks.delta(), 2), 
+                "gamma":round(risks.gamma(), 2), 
+                "vega":round(risks.vega(), 2), 
+                "theta":round(risks.theta(), 2), 
+                "rho":round(risks.rho(), 2)}
         
     
     def binary_option(self, inputs:dict) -> dict :
@@ -136,7 +206,7 @@ class Run :
         return {"price":round(option_process['price'], 2), 
                 "proba":round(option_process['proba'], 2)}
         
-    def barrier_option(self, inputs) :
+    def barrier_option(self, inputs) -> dict :
         strike = self._input("strike", inputs)
         barrier = self._input("barrier", inputs)
         option_type = self._input("option_type", inputs).lower()
@@ -151,6 +221,60 @@ class Run :
         
         return {"price":round(option_process['price'], 2), 
                 "proba":round(option_process['proba'], 2)}
+        
+    def reverse_convertible(self, inputs) -> dict :
+        underlying = self._input("underlying", inputs)
+        strike = self._input("strike", inputs)
+        coupon_rate = self._input("coupon_rate", inputs)
+        maturity = self._input("maturity", inputs)
+        nominal = self._input("nominal", inputs)
+        nb_coupon = self._input("nb_coupon", inputs)
+        rate = self._input("rates", inputs)
+        coupon = self._input("coupon", inputs)
+        
+        if underlying == FOREX :
+            # For options on exchange rates:
+            domestic_rate = self._input("domestic_rate", inputs)
+            maturity = self._input("maturity", inputs)            
+            put = VanillaOption(underlying, {"option_type":"put", "strike":strike, "domestic_rate":domestic_rate, "maturity":self._input("maturity", inputs)})
+        else :
+            # For every others option type :
+            put = VanillaOption(underlying=underlying, inputs={"option_type":"put", "strike":strike}) 
+        
+        bond = FixedBond(coupon_rate=coupon_rate, maturity=maturity, nominal=nominal, nb_coupon=nb_coupon, rate=rate)
+        
+        process = BrownianMotion(inputs=inputs)
+        put_process = process.pricing(put)
+        
+        product = ReverseConvertible({"put":put, "put price": put_process["price"], 
+                         "bond":bond, "bond price": bond.price(), "coupon":coupon})
+        
+        return {"price":round(product.price(), 2)}
+        
+    
+    def certificat_outperformance(self, inputs) -> dict :
+        underlying = self._input("underlying", inputs)
+        strike = self._input("strike", inputs)
+        
+        if underlying == FOREX :
+            # For options on exchange rates:
+            domestic_rate = self._input("domestic_rate", inputs)
+            maturity = self._input("maturity", inputs)            
+            call = VanillaOption(underlying, {"option_type":"call", "strike":strike, "domestic_rate":domestic_rate, "maturity":self._input("maturity", inputs)})
+            call = VanillaOption(underlying, {"option_type":"call", "strike":0, "domestic_rate":domestic_rate, "maturity":self._input("maturity", inputs)})
+        else :
+            # For every others option type :
+            call = VanillaOption(underlying=underlying, inputs={"option_type":"call", "strike":strike})
+            zero_call = VanillaOption(underlying=underlying, inputs={"option_type":"call", "strike":0})  
+        
+        process = BrownianMotion(inputs=inputs)
+        call_process = process.pricing(call)
+        zero_process = process.pricing(zero_call)
+        
+        product = CertificatOutperformance({"zero strike call": zero_call, "zero strike call price": zero_process["price"],
+                               "call":call, "call price":call_process["price"]})
+        
+        return {"price":round(product.price(), 2)}
         
         
 class StressTest:
@@ -205,8 +329,34 @@ class StressTest:
     def spread(self, inputs:dict) -> dict :      
         new_inputs = self._get_new_inputs(inputs)
         
-        old = Run().vanilla_option(inputs=inputs)
-        new = Run().vanilla_option(inputs=new_inputs)
+        old = Run().spread(inputs=inputs)
+        new = Run().spread(inputs=new_inputs)
+    
+        return {"price":round(new["price"] - old["price"], 2), 
+                "delta":round(new["delta"] - old["delta"], 2), 
+                "gamma":round(new["gamma"] - old["gamma"], 2), 
+                "vega":round(new["vega"] - old["vega"], 2), 
+                "theta":round(new["theta"] - old["theta"], 2), 
+                "rho":round(new["rho"] - old["rho"], 2)}
+        
+    def butterfly(self, inputs:dict) -> dict :      
+        new_inputs = self._get_new_inputs(inputs)
+        
+        old = Run().butterfly(inputs=inputs)
+        new = Run().butterfly(inputs=new_inputs)
+    
+        return {"price":round(new["price"] - old["price"], 2), 
+                "delta":round(new["delta"] - old["delta"], 2), 
+                "gamma":round(new["gamma"] - old["gamma"], 2), 
+                "vega":round(new["vega"] - old["vega"], 2), 
+                "theta":round(new["theta"] - old["theta"], 2), 
+                "rho":round(new["rho"] - old["rho"], 2)}
+        
+    def option_strategy(self, inputs:dict) -> dict :      
+        new_inputs = self._get_new_inputs(inputs)
+        
+        old = Run().option_strategy(inputs=inputs)
+        new = Run().option_strategy(inputs=new_inputs)
     
         return {"price":round(new["price"] - old["price"], 2), 
                 "delta":round(new["delta"] - old["delta"], 2), 
@@ -232,4 +382,20 @@ class StressTest:
     
         return {"price":round(new["price"] - old["price"], 2), 
                 "proba":round(new["proba"] - old["proba"], 2)}
+        
+    def reverse_convertible(self, inputs:dict) -> dict :
+        new_inputs = self._get_new_inputs(inputs)
+        
+        old = Run().reverse_convertible(inputs=inputs)
+        new = Run().reverse_convertible(inputs=new_inputs)
+    
+        return {"price":round(new["price"] - old["price"], 2)}
+    
+    def certificat_outperformance(self, inputs:dict) -> dict :
+        new_inputs = self._get_new_inputs(inputs)
+        
+        old = Run().certificat_outperformance(inputs=inputs)
+        new = Run().certificat_outperformance(inputs=new_inputs)
+    
+        return {"price":round(new["price"] - old["price"], 2)}
         

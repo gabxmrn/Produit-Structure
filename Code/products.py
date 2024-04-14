@@ -87,7 +87,7 @@ class OptionProducts(AbstractProduct):
 
     def __init__(self, type: str, long_short: str, inputs: dict) -> None:
         """ 
-        Initialize a Spread object.
+        Initialize a OptionProducts object.
         Args: 
         - type (str) : product type (straddle or strangle).
         - long_short (str) : Long or short product. 

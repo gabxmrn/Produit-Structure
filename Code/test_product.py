@@ -109,8 +109,43 @@ print(put_spread)
 st_put_spread = stress_test.spread(inputs={**inputs_dict, **{"underlying":"forex rate", "option_type":"put", "forward_rate":0.2, "domestic_rate":0.1, "short_strike":105, "long_strike":110}})
 print(st_put_spread)
 
+#### BUTTERFLY
+
+print("BUTTERFLY : ")
+call_spread = Run().butterfly(inputs={**inputs_dict, **{"underlying":"no dividend share", "strike_1":95, "strike_2":105, "strike_3":110}}) 
+print(call_spread)
+st_call_spread = stress_test.butterfly(inputs={**inputs_dict, **{"underlying":"no dividend share", "strike_1":95, "strike_2":105, "strike_3":110}})
+print(st_call_spread)
+
 print("           ")
 
+#### STRADDLE, STRANGLE, STRIP, STRAP
+
+print("STRADDLE : ")
+straddle = Run().option_strategy(inputs={**inputs_dict, **{"option_type":"straddle", "option_position":"long", "underlying":"no dividend share", "call_strike":102, "put_strike":102}}) 
+print(straddle)
+st_straddle  = stress_test.option_strategy(inputs={**inputs_dict, **{"option_type":"straddle", "option_position":"long", "underlying":"no dividend share", "call_strike":102, "put_strike":102}})
+print(st_straddle)
+
+print("STRANGLE : ")
+strangle = Run().option_strategy(inputs={**inputs_dict, **{"option_type":"strangle", "option_position":"long", "underlying":"no dividend share", "call_strike":102, "put_strike":98}}) 
+print(strangle)
+st_strangle  = stress_test.option_strategy(inputs={**inputs_dict, **{"option_type":"strangle", "option_position":"long", "underlying":"no dividend share", "call_strike":102, "put_strike":98}})
+print(st_strangle)
+
+print("STRIP : ")
+strip = Run().option_strategy(inputs={**inputs_dict, **{"option_type":"strip", "option_position":"long", "underlying":"no dividend share", "call_strike":102, "put_strike":102}}) 
+print(strip)
+st_strip  = stress_test.option_strategy(inputs={**inputs_dict, **{"option_type":"strip", "option_position":"long", "underlying":"no dividend share", "call_strike":102, "put_strike":102}})
+print(st_strip)
+
+print("STRAP : ")
+strap = Run().option_strategy(inputs={**inputs_dict, **{"option_type":"strap", "option_position":"long", "underlying":"no dividend share", "call_strike":102, "put_strike":102}}) 
+print(strap)
+st_strap  = stress_test.option_strategy(inputs={**inputs_dict, **{"option_type":"strap", "option_position":"long", "underlying":"no dividend share", "call_strike":102, "put_strike":102}})
+print(st_strap)
+
+print("           ")
 
 ########################################## BINARY OPTIONS #####################################
 
@@ -148,3 +183,20 @@ barrier_KI = Run().barrier_option(inputs={**inputs_dict, **{"option_type":"knock
 print(barrier_KI)
 st_barrier_KI = stress_test.barrier_option(inputs={**inputs_dict, **{"option_type":"knock_out", "barrier":120, "strike":100}})
 print(st_barrier_KI)
+
+print("           ")
+
+########################################### TEST STRUCTURED PRODUCTS : #######################################
+
+print("REVERSE CONVERTIBLE : ")
+reverse_convertible = Run().reverse_convertible(inputs={**inputs_dict, **{"coupon_rate":0.1, "maturity":maturity, "nominal":100, "nb_coupon":22, "coupon":0.05, "strike":100, "underlying":"no dividend share"}})
+print(reverse_convertible)
+st_reverse_convertible = stress_test.reverse_convertible(inputs={**inputs_dict, **{"coupon_rate":0.1, "maturity":maturity, "nominal":100, "nb_coupon":22, "coupon":0.05, "strike":100, "underlying":"no dividend share"}})
+print(st_reverse_convertible)
+
+print("CERTIFICAT OUTPERFORMANCE : ")
+certificat_outperformance = Run().certificat_outperformance(inputs={**inputs_dict, **{"underlying":"no dividend share", "call_strike":100}})
+print(certificat_outperformance)
+st_certificat_outperformance = stress_test.certificat_outperformance(inputs={**inputs_dict, **{"underlying":"no dividend share", "call_strike":100}})
+print(certificat_outperformance)
+
