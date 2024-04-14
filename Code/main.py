@@ -50,14 +50,6 @@ print("           ")
 
 #### CALL / PUT
 
-process = BrownianMotion({
-    "nb_simulations":1000,
-    "nb_steps":1000,
-    "spot":100,
-    "rates":Rate(0.03, rate_type="compounded"),
-    "volatility":0.2,
-    "maturity":Maturity(0.5)
-})
 
 call_product = VanillaOption("no dividend share", {"option_type":"call", "strike":102})
 call_process = process.pricing(call_product) 

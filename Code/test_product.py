@@ -52,7 +52,7 @@ print("           ")
 
 ########################################### TEST VANILLA OPTIONS : ###########################################
 
-#### CALL / PUT
+#### CALL / PUT (simple)
 
 print("CALL (No dividend share) : ")
 simple_call = Run().vanilla_option(inputs={"underlying":"no dividend share", 
@@ -97,3 +97,57 @@ st_simple_put = stress_test.vanilla_option(inputs={"underlying":"non capitalized
                                         "volatility":0.2,
                                         "maturity":Maturity(0.5)})
 print(st_simple_put)
+
+#### CALL / PUT (share & forex)
+
+print("CALL (Dividend share) : ")
+dividend_call = Run().vanilla_option(inputs={"underlying":"dividend share", 
+                                        "option_type":"call",
+                                        "strike":102, 
+                                        "nb_simulations":1000,
+                                        "nb_steps":1000,
+                                        "spot":100,
+                                        "rates":Rate(0.03, rate_type="compounded"),
+                                        "volatility":0.2,
+                                        "maturity":Maturity(0.5), 
+                                        "dividend":0.02}) 
+print(dividend_call)
+st_dividend_call = stress_test.vanilla_option(inputs={"underlying":"no dividend share", 
+                                        "option_type":"call",
+                                        "strike":102, 
+                                        "nb_simulations":1000,
+                                        "nb_steps":1000,
+                                        "spot":100,
+                                        "rates":Rate(0.03, rate_type="compounded"),
+                                        "volatility":0.2,
+                                        "maturity":Maturity(0.5),
+                                        "dividend":0.02})
+print(st_dividend_call)
+
+print("PUT (Forex) : ")
+forex_put = Run().vanilla_option(inputs={"underlying":"forex rate", 
+                                        "option_type":"call",
+                                        "strike":102, 
+                                        "nb_simulations":1000,
+                                        "nb_steps":1000,
+                                        "spot":100,
+                                        "rates":Rate(0.03, rate_type="compounded"),
+                                        "volatility":0.2,
+                                        "maturity":Maturity(0.5), 
+                                        "forward_rate":0.2, 
+                                        "domestic_rate":0.1}) 
+print(forex_put)
+st_forex_put = stress_test.vanilla_option(inputs={"underlying":"forex rate", 
+                                        "option_type":"call",
+                                        "strike":102, 
+                                        "nb_simulations":1000,
+                                        "nb_steps":1000,
+                                        "spot":100,
+                                        "rates":Rate(0.03, rate_type="compounded"),
+                                        "volatility":0.2,
+                                        "maturity":Maturity(0.5),
+                                        "forward_rate":0.2, 
+                                        "domestic_rate":0.1})
+print(st_forex_put)
+
+print("           ")
