@@ -3,13 +3,15 @@ import datetime
 from bond import FixedBond, ZcBond
 from riskAnalysis import BondRisk, OptionRisk
 from brownianMotion import BrownianMotion
-from products import VanillaOption
+from products import VanillaOption, BinaryOption
 
-SHARE_NO_DIV = "no dividend share"
-SHARE_DIV = "dividend share"
+### Option type : 
+SHARE_NO_DIV, SHARE_DIV  = "no dividend share", "dividend share"
 FOREX = "forex rate"
-CAPITALIZED_INDEX = "capitalized index"
-NON_CAPITALIZED_INDEX = "non capitalized index"
+CAPITALIZED_INDEX, NON_CAPITALIZED_INDEX = "capitalized index", "non capitalized index"
+BINARY_PUT, BINARY_CALL = "binary_call", "binary_put"
+ONE_TOUCH, NO_TOUCH, DOUBLE_ONE_TOUCH, DOUBLE_NO_TOUCH = "one_touch", "no_touch", "double_one_touch", "double_no_touch"
+
 
 class Run :
     
@@ -44,62 +46,24 @@ class Run :
                 "ytm":round(ytm, 2), 
                 "duration":round(duration, 2), 
                 "convexity":round(convexity, 2)}
+                
         
     def vanilla_option(self, inputs:dict) -> dict : 
         underlying = self._input("underlying", inputs)
         strike = self._input("strike", inputs)
         option_type = self._input("option_type", inputs)
         
-        if underlying == SHARE_DIV or underlying == CAPITALIZED_INDEX :
-            # For options on stocks with dividend and for options on capitalized index:  
-            option = VanillaOption(underlying=underlying, inputs={"option_type":option_type, "strike":strike})
-            if "dividend_date" in inputs :
-                process = process = BrownianMotion({
-                    "nb_simulations":self._input("nb_simulations", inputs),
-                    "nb_steps":self._input("nb_steps", inputs),
-                    "spot":self._input("spot", inputs),
-                    "rates":self._input("rates", inputs),
-                    "volatility":self._input("volatility", inputs),
-                    "maturity":self._input("maturity", inputs), 
-                    "dividend":self._input("dividend", inputs),
-                    "dividend_date":self._input("dividend_date", inputs)})   
-            else :
-                process = process = BrownianMotion({
-                    "nb_simulations":self._input("nb_simulations", inputs),
-                    "nb_steps":self._input("nb_steps", inputs),
-                    "spot":self._input("spot", inputs),
-                    "rates":self._input("rates", inputs),
-                    "volatility":self._input("volatility", inputs),
-                    "maturity":self._input("maturity", inputs), 
-                    "dividend":self._input("dividend", inputs)})   
-        
-        elif underlying == FOREX :
+        process = process = BrownianMotion(inputs=inputs)
+       
+        if underlying == FOREX :
             # For options on exchange rates:
             domestic_rate = self._input("domestic_rate", inputs)
             maturity = self._input("maturity", inputs)
-            option = VanillaOption(underlying=underlying, inputs={"option_type":option_type, "strike":strike, "domestic_rate":domestic_rate, "maturity":self._input("maturity", inputs)})
-            process = process = BrownianMotion({
-                "nb_simulations":self._input("nb_simulations", inputs),
-                "nb_steps":self._input("nb_steps", inputs),
-                "spot":self._input("spot", inputs),
-                "rates":self._input("rates", inputs),
-                "volatility":self._input("volatility", inputs),
-                "maturity":maturity, 
-                "forward_rate":self._input("forward_rate", inputs)})   
-            
-        elif underlying == SHARE_NO_DIV or underlying == NON_CAPITALIZED_INDEX :
-            # For option on stocks without dividend and for options on non capitalized index
-            option = VanillaOption(underlying=underlying, inputs={"option_type":option_type, "strike":strike})
-            process = process = BrownianMotion({
-                "nb_simulations":self._input("nb_simulations", inputs),
-                "nb_steps":self._input("nb_steps", inputs),
-                "spot":self._input("spot", inputs),
-                "rates":self._input("rates", inputs),
-                "volatility":self._input("volatility", inputs),
-                "maturity":self._input("maturity", inputs)}) 
+            option = VanillaOption(underlying=underlying, inputs={"option_type":option_type, "strike":strike, "domestic_rate":domestic_rate, "maturity":self._input("maturity", inputs)}) 
             
         else :
-            raise Exception("Unknown underlying.")
+            # For every others option type :
+            option = VanillaOption(underlying=underlying, inputs={"option_type":option_type, "strike":strike})
             
         option_process = process.pricing(option)
         risks = OptionRisk(option, process)
@@ -112,6 +76,35 @@ class Run :
                 "vega":round(risks.vega(), 2), 
                 "theta":round(risks.theta(), 2), 
                 "rho":round(risks.rho(), 2)}
+        
+    def optional_strategy(self, inputs:dict) -> dict :
+        pass 
+    
+    def binary_option(self, inputs:dict) -> dict :
+        strike = self._input("strike", inputs)
+        option_type = self._input("option_type", inputs).lower()
+        payoff_amount = self._input("payoff_amount", inputs)
+        
+        process = BrownianMotion(inputs=inputs)
+        
+        if option_type == BINARY_CALL or option_type == BINARY_PUT:
+            option = BinaryOption({"strike":strike, "option_type":option_type, "payoff_amount": payoff_amount})
+                
+        elif option_type == ONE_TOUCH or option_type == NO_TOUCH:
+            barrier = self._input("barrier", inputs)
+            option = BinaryOption({"strike":strike, "option_type":option_type, "payoff_amount": payoff_amount, "barrier":barrier})
+            
+        elif option_type == DOUBLE_ONE_TOUCH or option_type == DOUBLE_NO_TOUCH :
+            upper_barrier = self._input("upper_barrier", inputs)
+            lower_barrier = self._input("lower_barrier", inputs)
+            option = BinaryOption({"strike":strike, "option_type":option_type, "payoff_amount": payoff_amount, "upper_barrier":upper_barrier, "lower_barrier":lower_barrier})
+        
+        option_process = process.pricing(option)
+        
+        return {"price":round(option_process['price'], 2), 
+                "proba":round(option_process['proba'], 2)}
+        
+        
         
         
 class StressTest:
@@ -162,4 +155,15 @@ class StressTest:
                 "vega":round(new["vega"] - old["vega"], 2), 
                 "theta":round(new["theta"] - old["theta"], 2), 
                 "rho":round(new["rho"] - old["rho"], 2)}
+        
+    def binary_option(self, inputs:dict) -> dict :
+        new_inputs = inputs.copy()
+        new_inputs["maturity"] = inputs["maturity"].get_new_maturity(self._new_begin_date, self._new_maturity_in_years)
+        new_inputs["spot"] = self._new_spot
+        
+        old = Run().binary_option(inputs=inputs)
+        new = Run().binary_option(inputs=new_inputs)
+    
+        return {"price":round(new["price"] - old["price"], 2), 
+                "proba":round(new["proba"] - old["proba"], 2)}
         

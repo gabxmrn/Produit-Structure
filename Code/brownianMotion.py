@@ -11,6 +11,7 @@ SHARE_DIV = "dividend share"
 FOREX = "forex rate"
 CAPITALIZED_INDEX = "capitalized index"
 NON_CAPITALIZED_INDEX = "non capitalized index"
+CALL, PUT = "call", "put"
 
 class BrownianMotion:
     """
@@ -57,6 +58,9 @@ class BrownianMotion:
     
     def _check_underlying(self, product:AbstractProduct, spot:float, rate:float) : 
                 
+        if product._option_type != CALL and product._option_type != PUT :
+            return spot, rate
+        
         if product._underlying == SHARE_DIV or product._underlying == CAPITALIZED_INDEX :
             # For options on stocks with dividend and for options on capitalized index:
             dividend = self.input("dividend")                     
