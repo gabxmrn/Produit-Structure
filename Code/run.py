@@ -218,9 +218,10 @@ class Run :
             
         process = BrownianMotion(inputs=inputs)
         option_process = process.pricing(option, monte_carlo=True)
-        
+        price_paths = process.paths_plot        
         return {"price":round(option_process['price'], 2), 
-                "proba":round(option_process['proba'], 2)}
+                "proba":round(option_process['proba'], 2), 
+                "paths": price_paths}
         
     def reverse_convertible(self, inputs) -> dict :
         underlying = self._input("underlying", inputs)

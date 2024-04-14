@@ -4,16 +4,26 @@ import plotly.graph_objects as go
 from datetime import datetime
 from maturity import Maturity
 from rate import Rate
-from bond import FixedBond, ZcBond
 from brownianMotion import BrownianMotion
 from products import VanillaOption, KnockInOption, KnockOutOption
 from riskAnalysis import BondRisk, OptionRisk
+from run import Run
+st.markdown(
+    """
+    <style>
+    body {
+        font-family: "Arial Unicode MS", Arial, sans-serif;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 st.title('Financial Models Analysis')
 
-# Sidebar for model selection
-model_selection = st.sidebar.selectbox("Select a Model to Analyze",
-                                       ["Bond Pricing", "Vanilla Options", "Barrier Options"])
+model_selection = st.sidebar.selectbox("Select a model to analyse",
+                                       ["Bond Pricing", "Vanilla Options", "Barrier Options", 
+                                        "Binary Options", "Structured Products", "Spread"])
 
 st.header("Common Inputs")
 ###########################################  MATURITY: ###########################################
@@ -24,9 +34,11 @@ if maturity_type == 'Maturity in years':
     maturity = Maturity(mat_value)
 
 else:
-    begin_date = st.date_input("Begin Date", value=datetime(2024, 3, 7))
-    end_date = st.date_input("End Date", value=datetime(2025, 3, 7))
-    day_count_convention = st.selectbox("Day Count Convention", ["ACT/360", "ACT/365"])
+    col1, col2 = st.columns(2)
+    begin_date = col1.date_input("Begin Date", value=datetime(2024, 3, 7))
+    end_date = col2.date_input("End Date", value=datetime(2025, 3, 7))
+    day_count_convention = st.radio("Day Count Convention", 
+                                    ["ACT/360", "ACT/365"])
     maturity = Maturity(begin_date=begin_date, 
                         end_date=end_date, 
                         day_count_convention=day_count_convention)
@@ -58,83 +70,143 @@ else:
         Maturity(1.0):maturity_1Y,
         Maturity(5.0):maturity_5Y,
         }
-    interpol_type = st.selectbox('Interpolation Type', ['linear', 'logarithmic'])
+    interpol_type = st.selectbox('Interpolation Type', ['linear', 'cubic', 'logarithmic', 'barycentric', 'krogh', ])
     rate = Rate(rate_type=rate_type, 
                 interpol_type=interpol_type, 
                 rate_curve=curve)
-
+    
+#################### BOND PRICING  ######################
 if model_selection == "Bond Pricing":
     st.header("Bond Pricing")
     zero_bool = st.radio("Type of coupon detachment",
                          ('Zero-Coupon', 'Fixed'))
-    nominal = st.number_input('Nominal Value', min_value=100, value=1000, step=100)
+    nominal = st.number_input('Nominal Value', min_value=100, value=100, step=100)
     if zero_bool == "Fixed":
-        coupon_rate = st.number_input('Coupon Rate', min_value=0.0, value=0.1, step=0.1)
-        nb_coupon = st.number_input('Number of coupons', min_value=0, value=50, step=1)
+        col1, col2 = st.columns(2)
+        coupon_rate = col1.number_input('Coupon Rate', min_value=0.0, value=0.1, step=0.1)
+        nb_coupon = col2.number_input('Number of coupons', min_value=0, value=50, step=1)
+
     if st.button('Simulate Bond Pricing'):
         if zero_bool == "Zero-Coupon":
-            zc_bond=  ZcBond(rate=rate, maturity=maturity, nominal=100)
-            st.write(f"Prix zero coupon bond = {round(zc_bond.price(), 2)}")
+            zc_bond=  Run().zc_bond(inputs={"rate":rate, 
+                                            "maturity":maturity, 
+                                            "nominal":nominal})
+            st.write(f"Zero coupon bond price = {round(zc_bond['price'], 2)}")
+
         elif zero_bool == "Fixed":
-            fixed_bond = FixedBond(coupon_rate=coupon_rate, 
-                                maturity=maturity, 
-                                nominal=nominal, 
-                                nb_coupon=nb_coupon, 
-                                rate=rate)
-            st.write(f"Prix de l'obligation à taux fixe = {round(fixed_bond.price(), 2)}")
-            st.write(f"YTM de l'obligation à taux fixe = {round(fixed_bond.ytm(), 2)}")
+            fixed_bond = Run().fixed_bond(inputs={"coupon_rate":coupon_rate, 
+                                                  "maturity":maturity, 
+                                                  "nominal":nominal, 
+                                                  "nb_coupon":nb_coupon, 
+                                                  "rate":rate})
+
+            st.write(f"Fixed rate bond price = {round(fixed_bond['price'], 2)}")
+            st.write(f"Yield to Maturity (YTM) of the fixed rate bond = {round(fixed_bond['ytm'], 2)}")
+            col1, col2 = st.columns(2)
+            col1.write(f"Duration = {round(fixed_bond['duration'], 2)}")
+            col2.write(f"Convexity = {round(fixed_bond['convexity'], 2)}")
+
 
 ################## OPTIONS ################
-if model_selection in ["Vanilla Options", "Barrier Options"]:
+if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "Structured Products", "Spread"]:
     st.subheader("Inputs to initialise the Brownian Motion")
     nb_simulations = st.number_input('Number of Simulations', value=1000, min_value=1)
     nb_steps = st.number_input('Number of Steps', value=100, min_value=1)
     spot = st.number_input('Spot Price', value=100.0)
     volatility = st.slider('Volatility', min_value=0.0, max_value=1.0, value=0.2)
+    strike_price = st.number_input('Strike Price', value=100.0)
 
-    process_params = {
-        "nb_simulations": nb_simulations,
-        "nb_steps": nb_steps,
-        "spot": spot,
-        "rates": rate,
-        "volatility": volatility,
-        "maturity": maturity,
-    }
-
+    inputs_dict = { "nb_simulations":nb_simulations,
+                    "nb_steps":nb_steps,
+                    "spot":spot,
+                    "rates":rate,
+                    "volatility":volatility,
+                    "maturity":maturity, 
+                    "strike":strike_price}
+    
     if model_selection == "Vanilla Options":
         st.header("Vanilla Options")
-        option_type = st.selectbox('Option Type', ['Call', 'Put'])
-        strike_price = st.number_input('Strike Price', value=100.0)
+        option_type = st.radio('Option Type', ['Call', 'Put'])
+        underlying =  st.selectbox('Choose the underlyng asset for the option', 
+                                   ['non capitalized index', 'no dividend share', 'dividend share','forex rate'])
+        dividend, domestic_rate, forward_rate = None, None, None
+        if underlying =="dividend share":
+            dividend = st.slider('Dividend Rate', min_value=0.0, max_value=1.0, value=0.02)
+        elif underlying =="forex rate":
+            col1, col2 = st.columns(2)
+            domestic_rate = col1.slider('Domestic Rate', min_value=0.0, max_value=1.0, value=0.02)
+            forward_rate = col2.slider('Forward Rate', min_value=0.0, max_value=1.0, value=0.02)
 
         if st.button('Simulate'):
-            process = BrownianMotion(process_params)
-            option_params = {
-                "option_type": option_type,
-                "strike": strike_price,
-            }
-            vanilla_option = VanillaOption(option_params)        
-            result = process.pricing(vanilla_option)
-            st.write(f"Price = {round(result['price'], 2)}, Exercise Probability = {round(result['proba'], 2)}")
+            vanilla_option = Run().vanilla_option(inputs={**inputs_dict, 
+                                                          **{"underlying":underlying, 
+                                                            "option_type":option_type,},
+                                                          ** {"dividend": dividend, 
+                                                              "forward_rate": forward_rate,
+                                                            "domestic_rate": domestic_rate,}})
+            col1, col2 = st.columns(2)
+            col1.write(f"Price = {round(vanilla_option['price'], 2)}")
+            col2.write(f"Exercise Probability = {round(vanilla_option['proba'], 2)}")
+            greeks_display = st.expander("Sensitivities")
+            cols = greeks_display.columns(5)
+            cols[0].write( f"$\delta$: {vanilla_option['delta']}")
+            cols[1].write( f"$\gamma$: {vanilla_option['gamma']}")
+            cols[2].write( f"$v$: {vanilla_option['vega']}")
+            cols[3].write( f"ρ: {vanilla_option['rho']}")
+            cols[4].write( f" θ: {vanilla_option['theta']}")
+            greeks_display.write(
+                f"""
+                - $\delta$ represents the equity exposure, i.e., the change in option price due to the spot. \n
+                - $\gamma$ represents the payout convexity, i.e., the change in delta due to the spot. \n
+                - $v$ represents the volatility exposure, i.e., the change in option price due to the volatility. \n
+                - ρ represents the interest rate exposure, i.e., the change in option price due to interest rates. \n
+                - θ represents the time decay, i.e., the change in option price due to time passing. \n
+                """
+            )
+
+    elif model_selection == "Binary Options":
+        st.header("Binary Options")
+        binary_input =  st.selectbox('Choose the type of binary option', 
+                                   ['Binary put', 'Binary call',
+                                    'One touch', 'No touch', 
+                                    'Double one touch', 'Double no touch']).lower().replace(" ", "_")
+        barrier, lower_barrier, upper_barrier = None, None, None
+        if binary_input in ["one_touch", "no_touch"]:
+            barrier = st.number_input('Input barrier', value=120.0)
+        elif binary_input in  ["double_one_touch", "double_no_touch"] :
+            col1, col2 = st.columns(2)
+            lower_barrier = col1.number_input("Lower barrier", value=90.0)
+            upper_barrier = col2.number_input("Upper barrier", value=110.0)
+        payoff_amount = st.number_input('Payoff amount', value=100.0)
+        if st.button('Simulate Barrier Option'):
+            binary_option = Run().binary_option(inputs={**inputs_dict, 
+                                                        **{"option_type":binary_input, 
+                                                           "payoff_amount": payoff_amount}, 
+                                                        ** {"barrier":barrier, 
+                                                            "lower_barrier":lower_barrier, 
+                                                            "upper_barrier":upper_barrier}})
+            col1, col2 = st.columns(2)
+            col1.write(f"Price = {round(binary_option['price'], 2)}")
+            col2.write(f"Exercise Probability = {round(binary_option['proba'], 2)}")
 
     elif model_selection == "Barrier Options":
         st.header("Barrier Options")
         MC_sim = True
         barrier = st.number_input('Barrier Level', value=120, step=10)
         KI_KO_bool = st.radio("Type of barrier option",
-                                ('Knock-In', 'Knock-Out'))
+                                ('Knock-In', 'Knock-Out')).lower().replace('-', "_")
         if st.button('Simulate Barrier Option'):
-            process = BrownianMotion(process_params)
-            option_params = {"barrier": barrier, 
-                            "strike": 100.0}  
-            if KI_KO_bool == 'Knock-In':
-                option = KnockInOption(option_params)
-            else:  
-                option = KnockOutOption(option_params)
-            result = process.pricing(option, monte_carlo=MC_sim)
-            price = round(result['price'], 2)
-            exercise_prob = round(result['proba'], 2)
-            st.write(f"Option Price = {price}, Exercise Probability = {exercise_prob}")
-            price_paths = process.paths_plot
+            barrier_option = Run().barrier_option(inputs={**inputs_dict,
+                                                           **{"option_type":KI_KO_bool, 
+                                                              "barrier":barrier, 
+                                                              "strike":strike_price}})
+
+            col1, col2 = st.columns(2)
+            col1.write(f"Price = {round(barrier_option['price'], 2)}")
+            col2.write(f"Exercise Probability = {round(barrier_option['proba'], 2)}")
+            plot_display = st.expander("Plot")
+
+            price_paths = barrier_option['paths']
             fig = go.Figure()
             for i in range(price_paths.shape[0]):
                 fig.add_trace(go.Scatter(x=np.arange(price_paths.shape[1]), y=price_paths[i, :], mode='lines', 
@@ -142,10 +214,41 @@ if model_selection in ["Vanilla Options", "Barrier Options"]:
             fig.add_trace(go.Scatter(x=[0, price_paths.shape[1]-1], y=[barrier, barrier],
                          mode='lines', line=dict(color="Red", width=4, dash="dashdot"),
                          name=f'Barrier Level: {barrier}'))
-            fig.update_layout(title='Monte Carlo Simulation Price Paths',
+            fig.update_layout(title='Monte Carlo Simulation price paths',
                             xaxis_title='Time Step',
                             yaxis_title='Price',
                             xaxis=dict(showgrid=False),
                             yaxis=dict(showgrid=False))
 
             st.plotly_chart(fig)
+
+    elif model_selection == "Spread":
+        st.header("Spread Strategy Options")
+        option_type = st.radio('Option Type', ['Call', 'Put'])
+        underlying =  st.selectbox('Choose the underlyng asset for the option', 
+                                   ['non capitalized index', 'no dividend share', 'dividend share','forex rate'])
+        dividend, domestic_rate, forward_rate = None, None, None
+        if underlying =="dividend share":
+            dividend = st.slider('Dividend Rate', min_value=0.0, max_value=1.0, value=0.02)
+        elif underlying =="forex rate":
+            col1, col2 = st.columns(2)
+            domestic_rate = col1.slider('Domestic Rate', min_value=0.0, max_value=1.0, value=0.02)
+            forward_rate = col2.slider('Forward Rate', min_value=0.0, max_value=1.0, value=0.02)
+
+        col1, col2 = st.columns(2)
+        short_strike = col1.number_input('Short strike', value=105)
+        long_strike = col2.number_input('Long strike', value=95)
+        
+        if st.button('Simulate'):
+            vanilla_option = Run().spread(inputs={**inputs_dict, 
+                                                          **{"underlying":underlying, 
+                                                            "option_type":option_type,
+                                                            "long_strike":long_strike, 
+                                                            "short_strike":short_strike},
+                                                          ** {"dividend": dividend, 
+                                                              "forward_rate": forward_rate,
+                                                            "domestic_rate": domestic_rate,}})
+            col1, col2 = st.columns(2)
+            col1.write(f"Price = {round(vanilla_option['price'], 2)}")
+            col2.write(f"Exercise Probability = {round(vanilla_option['proba'], 2)}")
+        call_spread = Run().spread(inputs={**inputs_dict, **{"underlying":"dividend share", "option_type":"call", "dividend":0.02, "short_strike":105, "long_strike":95}}) 
