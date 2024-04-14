@@ -326,6 +326,7 @@ class KnockOutOption(AbstractProduct):
         super().__init__(inputs)
         self.barrier = inputs['barrier']
         self.strike = inputs['strike']
+        self._option_type = None
     
     def payoff(self, paths) -> float:
         """ Calculates the payoff considering the barrier. 'paths' is a NumPy array of simulated end prices """
@@ -351,6 +352,7 @@ class KnockInOption(AbstractProduct):
         super().__init__(inputs)
         self.barrier = inputs['barrier']
         self.strike = inputs['strike']
+        self._option_type = None
 
     def payoff(self, paths) -> float:
         """ For KI options, the option is only valid if the barrier is breached """

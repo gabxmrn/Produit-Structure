@@ -3,7 +3,7 @@ import datetime
 from bond import FixedBond, ZcBond
 from riskAnalysis import BondRisk, OptionRisk
 from brownianMotion import BrownianMotion
-from products import VanillaOption, BinaryOption
+from products import VanillaOption, BinaryOption, KnockOutOption, KnockInOption
 
 ### Option type : 
 SHARE_NO_DIV, SHARE_DIV  = "no dividend share", "dividend share"
@@ -11,6 +11,7 @@ FOREX = "forex rate"
 CAPITALIZED_INDEX, NON_CAPITALIZED_INDEX = "capitalized index", "non capitalized index"
 BINARY_PUT, BINARY_CALL = "binary_call", "binary_put"
 ONE_TOUCH, NO_TOUCH, DOUBLE_ONE_TOUCH, DOUBLE_NO_TOUCH = "one_touch", "no_touch", "double_one_touch", "double_no_touch"
+KNOCKOUT, KNOCKIN = "knock_out", "knock_in"
 
 
 class Run :
@@ -104,7 +105,21 @@ class Run :
         return {"price":round(option_process['price'], 2), 
                 "proba":round(option_process['proba'], 2)}
         
+    def barrier_option(self, inputs) :
+        strike = self._input("strike", inputs)
+        barrier = self._input("barrier", inputs)
+        option_type = self._input("option_type", inputs).lower()
         
+        if option_type == KNOCKOUT :
+            option = KnockOutOption({"barrier":barrier, "strike":strike})
+        elif option_type == KNOCKIN :
+            option = KnockInOption({"barrier":barrier, "strike":strike})
+            
+        process = BrownianMotion(inputs=inputs)
+        option_process = process.pricing(option, monte_carlo=True)
+        
+        return {"price":round(option_process['price'], 2), 
+                "proba":round(option_process['proba'], 2)}
         
         
 class StressTest:
@@ -116,20 +131,22 @@ class StressTest:
         self._new_spot = new_spot
         self._new_begin_date = new_begin_date 
         self._new_maturity_in_years = new_maturity_in_years
-        
-    def zc_bond(self, inputs:dict) -> dict :
+    
+    def _get_new_inputs(self, inputs) :
         new_inputs = inputs.copy()
         new_inputs["maturity"] = inputs["maturity"].get_new_maturity(self._new_begin_date, self._new_maturity_in_years)
         new_inputs["nominal"] = self._new_spot
+        return new_inputs
+        
+    def zc_bond(self, inputs:dict) -> dict :
+        new_inputs = self._get_new_inputs(inputs)
         
         old = Run().zc_bond(inputs=inputs)
         new = Run().zc_bond(inputs=new_inputs)
         return {"price":round(new["price"] - old["price"], 2)}
         
     def fixed_bond(self, inputs:dict) -> dict :
-        new_inputs = inputs.copy()
-        new_inputs["maturity"] = inputs["maturity"].get_new_maturity(self._new_begin_date, self._new_maturity_in_years)
-        new_inputs["nominal"] = self._new_spot
+        new_inputs = self._get_new_inputs(inputs)
 
         old = Run().fixed_bond(inputs=inputs)
         new = Run().fixed_bond(inputs=new_inputs)
@@ -140,9 +157,7 @@ class StressTest:
                 "convexity":round(new["convexity"] - old["convexity"], 2)}
         
     def vanilla_option(self, inputs:dict) -> dict :      
-        new_inputs = inputs.copy()
-        new_inputs["maturity"] = inputs["maturity"].get_new_maturity(self._new_begin_date, self._new_maturity_in_years)
-        new_inputs["spot"] = self._new_spot
+        new_inputs = self._get_new_inputs(inputs)
         
         old = Run().vanilla_option(inputs=inputs)
         new = Run().vanilla_option(inputs=new_inputs)
@@ -157,12 +172,19 @@ class StressTest:
                 "rho":round(new["rho"] - old["rho"], 2)}
         
     def binary_option(self, inputs:dict) -> dict :
-        new_inputs = inputs.copy()
-        new_inputs["maturity"] = inputs["maturity"].get_new_maturity(self._new_begin_date, self._new_maturity_in_years)
-        new_inputs["spot"] = self._new_spot
+        new_inputs = self._get_new_inputs(inputs)
         
         old = Run().binary_option(inputs=inputs)
         new = Run().binary_option(inputs=new_inputs)
+    
+        return {"price":round(new["price"] - old["price"], 2), 
+                "proba":round(new["proba"] - old["proba"], 2)}
+        
+    def barrier_option(self, inputs:dict) -> dict :
+        new_inputs = self._get_new_inputs(inputs)
+        
+        old = Run().barrier_option(inputs=inputs)
+        new = Run().barrier_option(inputs=new_inputs)
     
         return {"price":round(new["price"] - old["price"], 2), 
                 "proba":round(new["proba"] - old["proba"], 2)}

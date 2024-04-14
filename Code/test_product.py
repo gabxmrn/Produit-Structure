@@ -102,7 +102,7 @@ print("           ")
 
 ########################################## BINARY OPTIONS #####################################
 
-print("HIGHT LOW (binary call) : ")
+print("HIGH LOW (binary call) : ")
 high_low = Run().binary_option(inputs={**inputs_dict, **{"option_type":"binary_call", "payoff_amount": 120}})
 print(high_low)
 st_high_low = stress_test.binary_option(inputs={**inputs_dict, **{"option_type":"binary_call", "payoff_amount": 120}})
@@ -121,3 +121,18 @@ st_double_no_touch = stress_test.binary_option(inputs={**inputs_dict, **{"option
 print(st_double_no_touch)
 
 print("           ")
+
+
+########################################### TEST BARRIER OPTIONS : ###########################################
+
+print("KNOCK OUT OPTION : ")
+barrier_KO = Run().barrier_option(inputs={**inputs_dict, **{"option_type":"knock_out", "barrier":120, "strike":100}})
+print(barrier_KO)
+st_barrier_KO = stress_test.barrier_option(inputs={**inputs_dict, **{"option_type":"knock_out", "barrier":120, "strike":100}})
+print(st_barrier_KO)
+
+print("KNOCK IN OPTION : ")
+barrier_KI = Run().barrier_option(inputs={**inputs_dict, **{"option_type":"knock_in", "barrier":120, "strike":100}})
+print(barrier_KI)
+st_barrier_KI = stress_test.barrier_option(inputs={**inputs_dict, **{"option_type":"knock_out", "barrier":120, "strike":100}})
+print(st_barrier_KI)
