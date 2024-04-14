@@ -3,7 +3,7 @@ from rate import Rate
 from maturity import Maturity
 from brownianMotion import BrownianMotion
 from bond import FixedBond
-from riskAnalysis import OptionRisk, OptionProductsRisk, SpreadRisk, ButterflySpreadRisk
+from riskAnalysis import OptionRisk, OptionProductsRisk, SpreadRisk, ButterflySpreadRisk, StructuredProductsRisk
 
 import matplotlib.pyplot as plt
 
@@ -233,12 +233,37 @@ class GraphsOptions:
 
 
 class GraphsStructuredProducts:
+    """ A class representing the graphic of a structured product.
+    Argument:
+        _prod_type (str): type of structured product.
+        _graph_type (str): type of graphical representation.
+        _rate (Rate): rate of the financial product.
+        _vol (float): volatility of the financial product.
+        _maturity (Maturity): maturity of the financial product.
+        _product (ReverseConvertible or CertificatOutperformance): structured product to graph.
+        _product_price (float): price of the structured product.
+    """
 
     def __init__(self, graph_type: str, 
                  rate: Rate, maturity: Maturity, vol: float,
                  underlying: str, prod_type: str, strike: float, 
                  additionnal_coupon: float = None, coupon_rate: float = None, nb_coupon: float = None, nominal: float = None
                  ) -> None:
+        """
+        Initialize a GraphsStructuredProducts object.
+        Args:
+            graph_type (str): type of graphical representation.
+            rate (Rate): rate of the financial product.
+            maturity (Maturity): maturity of the financial product.
+            vol (float): volatility of the financial product.
+            underlying (str): underlying of the financial product.
+            prod_type (str): type of structured product.
+            strike (float): strike of the financial product.
+            additionnal_coupon (float, optional): the additional coupon for the reverse convertible. Defaults to None.
+            coupon_rate (float, optional): the coupon_rate for the reverse convertible. Defaults to None.
+            nb_coupon (float, optional): the number of coupon for the reverse convertible. Defaults to None.
+            nominal (float, optional): the nominal for the reverse convertible. Defaults to None.
+        """
 
         # Check inputs
         self._prod_type = prod_type.lower()
@@ -246,8 +271,8 @@ class GraphsStructuredProducts:
             raise Exception("Input error: Wrong option type, please enter reverse convertible or certificate outperformance.")
 
         self._graph_type = graph_type.lower()
-        if self._graph_type not in ["payoff", "profit"]:
-            raise Exception("Input error: graph type must be payoff or profit.")
+        if self._graph_type not in ["payoff", "profit", "delta", "gamma", "vega", "theta", "rho"]:
+            raise Exception("Input error: graph type must be payoff, profit, delta, gamma, vega, theta, rho.")
         
         # Process creation
         self._rate = rate
@@ -304,22 +329,60 @@ class GraphsStructuredProducts:
         
         return profits
 
+    def greeks(self):
+        """ Calculate and return the greeks of the product for a range of spots. """
+        greeks = []
+
+        for i in range(1, 200):
+            process = BrownianMotion({
+                "nb_simulations":1000,
+                "nb_steps":1000,
+                "spot": i,
+                "rates":self._rate,
+                "volatility":self._vol,
+                "maturity":self._maturity
+            })
+
+            if self._prod_type == "reverse convertible":
+                opt_greeks = StructuredProductsRisk(self._prod_type, process, 
+                                                convertible=self._product)
+            else:
+                opt_greeks = StructuredProductsRisk(self._prod_type, process,
+                                                    certificat=self._product)
+            
+            if self._graph_type == "delta":
+                greeks.append(opt_greeks.delta())
+            elif self._graph_type == "gamma":
+                greeks.append(opt_greeks.gamma())
+            elif self._graph_type == "vega":
+                greeks.append(opt_greeks.vega())
+            elif self._graph_type == "theta":
+                greeks.append(opt_greeks.theta())
+            elif self._graph_type == "rho":
+                greeks.append(opt_greeks.rho())
+
+        return greeks
+
     def plot(self) -> None:
-        """ Graph the payoff, or profit of the structured product for a range of spots. """
+        """ Graph the payoff, profit or greeks of the structured product for a range of spots. """
         if self._graph_type == "payoff":
             y_series = self.payoff()
         elif self._graph_type == "profit":
             y_series = self.price()
+        else: y_series = self.greeks()
 
-        y_below_zero = [y if y <= 0 else None for y in y_series]
-        y_above_zero = [y if y > 0 else None for y in y_series]
+        if self._graph_type in ["payoff", "profit"]:
+            y_below_zero = [y if y <= 0 else None for y in y_series]
+            y_above_zero = [y if y > 0 else None for y in y_series]
 
-        plt.plot(range(0, 200), y_below_zero, color='red', label='Below 0')
-        plt.plot(range(0, 200), y_above_zero, color='green', label='Above 0')
-        plt.axhline(0, color='black', linewidth=0.5)
+            plt.plot(range(0, 200), y_below_zero, color='red', label='Below 0')
+            plt.plot(range(0, 200), y_above_zero, color='green', label='Above 0')
+            plt.axhline(0, color='black', linewidth=0.5)
+        else:
+            plt.plot(range(1, 200), y_series, color='blue')
+            plt.axhline(0, color='black', linewidth=0.5)
+
         plt.xlabel('Spot Price')
         plt.ylabel(self._graph_type.capitalize())
         plt.title(f'{self._prod_type.title()} Option {self._graph_type.capitalize()}')
         plt.show()
-
-
