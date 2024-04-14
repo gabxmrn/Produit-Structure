@@ -23,7 +23,7 @@ st.title('Financial Models Analysis')
 
 model_selection = st.sidebar.selectbox("Select a model to analyse",
                                        ["Bond Pricing", "Vanilla Options", "Barrier Options", 
-                                        "Binary Options", "Structured Products"])
+                                        "Binary Options", "Structured Products", "Spread"])
 
 st.header("Common Inputs")
 ###########################################  MATURITY: ###########################################
@@ -108,7 +108,7 @@ if model_selection == "Bond Pricing":
 
 
 ################## OPTIONS ################
-if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "Structured Products"]:
+if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "Structured Products", "Spread"]:
     st.subheader("Inputs to initialise the Brownian Motion")
     nb_simulations = st.number_input('Number of Simulations', value=1000, min_value=1)
     nb_steps = st.number_input('Number of Steps', value=100, min_value=1)
@@ -128,13 +128,22 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
         st.header("Vanilla Options")
         option_type = st.radio('Option Type', ['Call', 'Put'])
         underlying =  st.selectbox('Choose the underlyng asset for the option', 
-                                   ['non capitalized index', 'no dividend share', 'forex rate'])
+                                   ['non capitalized index', 'no dividend share', 'dividend share','forex rate'])
+        dividend, domestic_rate, forward_rate = None, None, None
+        if underlying =="dividend share":
+            dividend = st.slider('Dividend Rate', min_value=0.0, max_value=1.0, value=0.02)
+        elif underlying =="forex rate":
+            col1, col2 = st.columns(2)
+            domestic_rate = col1.slider('Domestic Rate', min_value=0.0, max_value=1.0, value=0.02)
+            forward_rate = col2.slider('Forward Rate', min_value=0.0, max_value=1.0, value=0.02)
 
         if st.button('Simulate'):
             vanilla_option = Run().vanilla_option(inputs={**inputs_dict, 
-                                                          **{"underlying":"no dividend share", 
-                                                        "option_type":option_type,
-                                                        }})
+                                                          **{"underlying":underlying, 
+                                                            "option_type":option_type,},
+                                                          ** {"dividend": dividend, 
+                                                              "forward_rate": forward_rate,
+                                                            "domestic_rate": domestic_rate,}})
             col1, col2 = st.columns(2)
             col1.write(f"Price = {round(vanilla_option['price'], 2)}")
             col2.write(f"Exercise Probability = {round(vanilla_option['proba'], 2)}")
@@ -212,3 +221,34 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                             yaxis=dict(showgrid=False))
 
             st.plotly_chart(fig)
+
+    elif model_selection == "Spread":
+        st.header("Spread Strategy Options")
+        option_type = st.radio('Option Type', ['Call', 'Put'])
+        underlying =  st.selectbox('Choose the underlyng asset for the option', 
+                                   ['non capitalized index', 'no dividend share', 'dividend share','forex rate'])
+        dividend, domestic_rate, forward_rate = None, None, None
+        if underlying =="dividend share":
+            dividend = st.slider('Dividend Rate', min_value=0.0, max_value=1.0, value=0.02)
+        elif underlying =="forex rate":
+            col1, col2 = st.columns(2)
+            domestic_rate = col1.slider('Domestic Rate', min_value=0.0, max_value=1.0, value=0.02)
+            forward_rate = col2.slider('Forward Rate', min_value=0.0, max_value=1.0, value=0.02)
+
+        col1, col2 = st.columns(2)
+        short_strike = col1.number_input('Short strike', value=105)
+        long_strike = col2.number_input('Long strike', value=95)
+        
+        if st.button('Simulate'):
+            vanilla_option = Run().spread(inputs={**inputs_dict, 
+                                                          **{"underlying":underlying, 
+                                                            "option_type":option_type,
+                                                            "long_strike":long_strike, 
+                                                            "short_strike":short_strike},
+                                                          ** {"dividend": dividend, 
+                                                              "forward_rate": forward_rate,
+                                                            "domestic_rate": domestic_rate,}})
+            col1, col2 = st.columns(2)
+            col1.write(f"Price = {round(vanilla_option['price'], 2)}")
+            col2.write(f"Exercise Probability = {round(vanilla_option['proba'], 2)}")
+        call_spread = Run().spread(inputs={**inputs_dict, **{"underlying":"dividend share", "option_type":"call", "dividend":0.02, "short_strike":105, "long_strike":95}}) 
