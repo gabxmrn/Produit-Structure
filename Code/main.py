@@ -345,7 +345,7 @@ print("           ")
             ### Produits Structurés : ###
         - produits : OK (Problèmes ???)
         - greeks : OK
-        - graphiques : OK for payoff & pnl (to do: greeks) 
+        - graphiques : OK 
 
             ### Stress Tests : ###
         - ????

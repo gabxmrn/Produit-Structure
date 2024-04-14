@@ -48,8 +48,8 @@ class FixedBond:
         
         self.__price = None
         self.__ytm = None
-
-
+        
+    
     def price(self, force_rate:float = None):
         """
         Calculate the price of the bond.

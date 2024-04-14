@@ -15,7 +15,6 @@ class Maturity:
             begin_date: datetime = None,
             end_date: datetime = None,
             day_count_convention: str = "ACT/360",
-            # "ACT/360" -> il faut en mettre un forcé sinon on va avoir une erreur inutile ? 
             ) -> None:
         """
         Initialize a Maturity object.
@@ -28,11 +27,14 @@ class Maturity:
         """
         
         self.__day_count_convention = day_count_convention
+        self.end_date = end_date
 
-        if maturity_in_years != None:
+        if maturity_in_years is not None:
             self.__maturity_in_years = maturity_in_years
-        else :
-            self.__maturity_in_years = (end_date - begin_date).days/self._denom()
+        elif begin_date is not None and end_date is not None:
+            self.__maturity_in_years = (end_date - begin_date).days / self._denom()
+        else:
+            raise ValueError("Either maturity_in_years or both begin_date and end_date must be provided")
     
 
     def _denom(self) -> float:
@@ -62,3 +64,11 @@ class Maturity:
         """
 
         return self.__maturity_in_years
+    
+    def get_new_maturity(self, new_begin_date:datetime=None, new_maturity_in_years:float=None) :
+        if new_begin_date is None and not new_maturity_in_years is None :
+            return Maturity(maturity_in_years=new_maturity_in_years, day_count_convention=self.__day_count_convention)
+        elif not new_begin_date is None and not self.end_date is None :
+            return Maturity(begin_date=new_begin_date, end_date=self.end_date, day_count_convention=self.__day_count_convention)
+        else :
+            raise ValueError("Either maturity_in_years or both begin_date and end_date must be provided")

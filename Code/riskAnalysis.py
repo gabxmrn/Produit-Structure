@@ -1,9 +1,10 @@
+from math import exp, log, sqrt, pi
+from scipy.stats import norm
+
 from bond import FixedBond
 from products import VanillaOption, Spread, ButterflySpread, OptionProducts, ReverseConvertible, CertificatOutperformance
 from brownianMotion import BrownianMotion
 
-from math import exp, log, sqrt, pi
-from scipy.stats import norm
 
 CAPITALIZED_INDEX = "capitalized index"
 SHARE_DIV = "dividend share"
@@ -422,5 +423,7 @@ class StructuredProductsRisk:
             return self._conv_greeks.rho()
         else:
             return (1 - self._certif.participation_level()) * self._call_greeks.rho()        
+    
         
-
+    
+    
