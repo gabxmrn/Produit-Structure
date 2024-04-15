@@ -1,9 +1,8 @@
 import numpy as np
 
-
 FOREX = "forex rate"
-CALL = "call"
-PUT = "put"
+CALL, PUT = "call", "put"
+
 
 class AbstractProduct:
     """ Abstract class representing a financial product. """

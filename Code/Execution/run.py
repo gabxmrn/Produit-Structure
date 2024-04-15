@@ -3,7 +3,7 @@ import datetime
 from Products.bond import FixedBond, ZcBond
 from Products.brownianMotion import BrownianMotion
 from Products.products import VanillaOption, Spread, ButterflySpread, OptionProducts, BinaryOption, KnockOutOption, KnockInOption, ReverseConvertible, CertificatOutperformance
-from Products.riskAnalysis import BondRisk, OptionRisk, SpreadRisk, ButterflySpreadRisk, OptionProductsRisk
+from Products.riskAnalysis import BondRisk, OptionRisk, SpreadRisk, ButterflySpreadRisk, OptionProductsRisk, StructuredProductsRisk
 
 ### Option type : 
 SHARE_NO_DIV, SHARE_DIV  = "no dividend share", "dividend share"
@@ -248,8 +248,14 @@ class Run :
         
         product = ReverseConvertible({"put":put, "put price": put_process["price"], 
                          "bond":bond, "bond price": bond.price()})
+        risks = StructuredProductsRisk(type="reverse convertible", process=process, convertible=product)
         
-        return {"price":round(product.price(), 2)}
+        return {"price":round(product.price(), 2), 
+                "delta":round(risks.delta(), 2), 
+                "gamma":round(risks.gamma(), 2), 
+                "vega":round(risks.vega(), 2), 
+                "theta":round(risks.theta(), 2), 
+                "rho":round(risks.rho(), 2)}
         
     
     def certificat_outperformance(self, inputs) -> dict :
@@ -274,7 +280,14 @@ class Run :
         product = CertificatOutperformance({"zero strike call": zero_call, "zero strike call price": zero_process["price"],
                                "call":call, "call price":call_process["price"]})
         
-        return {"price":round(product.price(), 2)}
+        risks = StructuredProductsRisk(type="certificat outperformance", process=process, certificat=product)
+        
+        return {"price":round(product.price(), 2), 
+                "delta":round(risks.delta(), 2), 
+                "gamma":round(risks.gamma(), 2), 
+                "vega":round(risks.vega(), 2), 
+                "theta":round(risks.theta(), 2), 
+                "rho":round(risks.rho(), 2)}
         
         
 class StressTest:
@@ -389,7 +402,12 @@ class StressTest:
         old = Run().reverse_convertible(inputs=inputs)
         new = Run().reverse_convertible(inputs=new_inputs)
     
-        return {"price":round(new["price"] - old["price"], 2)}
+        return {"price":round(new["price"] - old["price"], 2),  
+                "delta":round(new["delta"] - old["delta"], 2), 
+                "gamma":round(new["gamma"] - old["gamma"], 2), 
+                "vega":round(new["vega"] - old["vega"], 2), 
+                "theta":round(new["theta"] - old["theta"], 2), 
+                "rho":round(new["rho"] - old["rho"], 2)}
     
     def certificat_outperformance(self, inputs:dict) -> dict :
         new_inputs = self._get_new_inputs(inputs)
@@ -397,5 +415,10 @@ class StressTest:
         old = Run().certificat_outperformance(inputs=inputs)
         new = Run().certificat_outperformance(inputs=new_inputs)
     
-        return {"price":round(new["price"] - old["price"], 2)}
+        return {"price":round(new["price"] - old["price"], 2),  
+                "delta":round(new["delta"] - old["delta"], 2), 
+                "gamma":round(new["gamma"] - old["gamma"], 2), 
+                "vega":round(new["vega"] - old["vega"], 2), 
+                "theta":round(new["theta"] - old["theta"], 2), 
+                "rho":round(new["rho"] - old["rho"], 2)}
         
