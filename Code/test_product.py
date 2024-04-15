@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from maturity import Maturity 
-from rate import Rate
-from run import Run, StressTest
+from Products.maturity import Maturity 
+from Products.rate import Rate
+from Execution.run import Run, StressTest
 
 ########################################### TEST MATURITY, RATE & ST : ###########################################
 
