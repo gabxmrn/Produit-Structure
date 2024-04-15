@@ -383,7 +383,7 @@ class StructuredProductsRisk:
             raise Exception("Input error: Please enter a certificat outperformance or a reverse convertible.")
 
     def greeks(self) -> str : 
-        """Return all butterfly spread greeks."""
+        """Return all structured product greeks."""
         return f"Delta = {round(self.delta(), 2)}, gamma = {round(self.gamma(), 2)}, vega = {round(self.vega(), 2)}, theta = {round(self.theta(), 2)}, rho = {round(self.rho(), 2)}"
     
     def delta(self) -> float :    
