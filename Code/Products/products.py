@@ -119,7 +119,7 @@ class OptionProducts(AbstractProduct):
         # Check strikes
         if self._type == "straddle" or self._type == "strip" or self._type == "strap":
             if self._call._strike != self._put._strike:
-                raise Exception("Input Error : For a straddle, the strike should be the same for the put and the call.")
+                raise Exception("Input Error : For this type of option, the strike should be the same for the put and the call.")
         elif self._type == "strangle":
             if self._call._strike <= self._put._strike:
                 raise Exception("Input Error : For a strangle, the call strike should be higher than the put strike.")
