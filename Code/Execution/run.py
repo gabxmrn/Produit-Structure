@@ -3,7 +3,7 @@ import datetime
 from Products.bond import FixedBond, ZcBond
 from Products.brownianMotion import BrownianMotion
 from Products.products import VanillaOption, Spread, ButterflySpread, OptionProducts, BinaryOption, KnockOutOption, KnockInOption, ReverseConvertible, CertificatOutperformance
-from riskAnalysis import BondRisk, OptionRisk, SpreadRisk, ButterflySpreadRisk, OptionProductsRisk
+from Products.riskAnalysis import BondRisk, OptionRisk, SpreadRisk, ButterflySpreadRisk, OptionProductsRisk
 
 ### Option type : 
 SHARE_NO_DIV, SHARE_DIV  = "no dividend share", "dividend share"

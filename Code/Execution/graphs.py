@@ -3,7 +3,7 @@ from Products.rate import Rate
 from Products.maturity import Maturity
 from Products.brownianMotion import BrownianMotion
 from Products.bond import FixedBond
-from riskAnalysis import OptionRisk, OptionProductsRisk, SpreadRisk, ButterflySpreadRisk, StructuredProductsRisk
+from Products.riskAnalysis import OptionRisk, OptionProductsRisk, SpreadRisk, ButterflySpreadRisk, StructuredProductsRisk
 
 import matplotlib.pyplot as plt
 

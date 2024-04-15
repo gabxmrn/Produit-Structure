@@ -1,5 +1,5 @@
 import streamlit as st
-
+from Execution.run import StressTest
 def display_greeks(greeks_dict):
     """
     Function to display sensitivity (Greeks) values in a consistent format.
@@ -47,7 +47,9 @@ def select_underlying_asset():
 
     return underlying, dividend, domestic_rate, forward_rate
 
-def display_results(asset, proba=False, greeks=False):
+def display_results(asset, proba=False, greeks=False, s_t=False):
+    if s_t:
+        st.subheader('Stress Testing Results')
     if proba:
         col1, col2 = st.columns(2)
         col1.write(f"Price = {round(asset['price'], 2)}")
@@ -56,3 +58,12 @@ def display_results(asset, proba=False, greeks=False):
         st.write(f"Price = {round(asset['price'], 2)}")
     if greeks:
         display_greeks(asset)
+    
+
+def stress_test_input():
+    st.header("Stress Testing")
+    col1, col2 = st.columns(2)
+    new_val = col1.number_input('New Spot', value=120, step=10)
+    new_mat = col2.number_input('New Maturity in years',  value=0.5, min_value=0.0)
+    stress_test = StressTest(new_spot=new_val, new_maturity_in_years=new_mat)
+    return stress_test

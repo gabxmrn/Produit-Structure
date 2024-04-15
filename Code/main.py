@@ -1,11 +1,10 @@
 from datetime import datetime
-from Code.Products.maturity import Maturity 
-from Code.Products.rate import Rate
-from Code.Products.bond import FixedBond, ZcBond
-from Code.Products.brownianMotion import BrownianMotion
-from Code.Products.products import VanillaOption, KnockInOption, KnockOutOption, BinaryOption, Spread, OptionProducts, ButterflySpread, ReverseConvertible, CertificatOutperformance
-
-from riskAnalysis import BondRisk, OptionRisk, OptionProductsRisk, SpreadRisk, ButterflySpreadRisk
+from Products.maturity import Maturity 
+from Products.rate import Rate
+from Products.bond import FixedBond, ZcBond
+from Products.brownianMotion import BrownianMotion
+from Products.products import VanillaOption, KnockInOption, KnockOutOption, BinaryOption, Spread, OptionProducts, ButterflySpread, ReverseConvertible, CertificatOutperformance
+from Products.riskAnalysis import BondRisk, OptionRisk, OptionProductsRisk, SpreadRisk, ButterflySpreadRisk
 
 ########################################### TEST STRUCTURED PRODUCTS : #######################################
 
