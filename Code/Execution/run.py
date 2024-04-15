@@ -1,8 +1,8 @@
 import datetime
 
-from bond import FixedBond, ZcBond
-from brownianMotion import BrownianMotion
-from products import VanillaOption, Spread, ButterflySpread, OptionProducts, BinaryOption, KnockOutOption, KnockInOption, ReverseConvertible, CertificatOutperformance
+from Products.bond import FixedBond, ZcBond
+from Products.brownianMotion import BrownianMotion
+from Products.products import VanillaOption, Spread, ButterflySpread, OptionProducts, BinaryOption, KnockOutOption, KnockInOption, ReverseConvertible, CertificatOutperformance
 from riskAnalysis import BondRisk, OptionRisk, SpreadRisk, ButterflySpreadRisk, OptionProductsRisk
 
 ### Option type : 

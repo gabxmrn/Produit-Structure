@@ -1,9 +1,9 @@
 from datetime import datetime
-from maturity import Maturity 
-from rate import Rate
-from bond import FixedBond, ZcBond
-from brownianMotion import BrownianMotion
-from products import VanillaOption, KnockInOption, KnockOutOption, BinaryOption, Spread, OptionProducts, ButterflySpread, ReverseConvertible, CertificatOutperformance
+from Code.Products.maturity import Maturity 
+from Code.Products.rate import Rate
+from Code.Products.bond import FixedBond, ZcBond
+from Code.Products.brownianMotion import BrownianMotion
+from Code.Products.products import VanillaOption, KnockInOption, KnockOutOption, BinaryOption, Spread, OptionProducts, ButterflySpread, ReverseConvertible, CertificatOutperformance
 
 from riskAnalysis import BondRisk, OptionRisk, OptionProductsRisk, SpreadRisk, ButterflySpreadRisk
 

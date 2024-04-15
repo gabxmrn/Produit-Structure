@@ -1,9 +1,9 @@
 from math import exp, log, sqrt, pi
 from scipy.stats import norm
 
-from bond import FixedBond
-from products import VanillaOption, Spread, ButterflySpread, OptionProducts, ReverseConvertible, CertificatOutperformance
-from brownianMotion import BrownianMotion
+from Products.bond import FixedBond
+from Products.products import VanillaOption, Spread, ButterflySpread, OptionProducts, ReverseConvertible, CertificatOutperformance
+from Products.brownianMotion import BrownianMotion
 
 
 CAPITALIZED_INDEX = "capitalized index"

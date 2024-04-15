@@ -1,7 +1,7 @@
 from scipy import interpolate
 import math
 
-from maturity import Maturity
+from Products.maturity import Maturity
 
 
 class Rate:

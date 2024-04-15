@@ -2,28 +2,17 @@ import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime
-from maturity import Maturity
-from rate import Rate
-from brownianMotion import BrownianMotion
-from products import VanillaOption, KnockInOption, KnockOutOption
-from riskAnalysis import BondRisk, OptionRisk
-from run import Run
-st.markdown(
-    """
-    <style>
-    body {
-        font-family: "Arial Unicode MS", Arial, sans-serif;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+from Products.maturity import Maturity
+from Products.rate import Rate
+from Execution.run import Run
+from Execution.tools_st import select_underlying_asset, display_results
 
 st.title('Financial Models Analysis')
 
 model_selection = st.sidebar.selectbox("Select a model to analyse",
                                        ["Bond Pricing", "Vanilla Options", "Barrier Options", 
-                                        "Binary Options", "Structured Products", "Spread"])
+                                        "Binary Options", "Structured Products", "Spread Options", 
+                                        "Optional Strategy Products"])
 
 st.header("Common Inputs")
 ###########################################  MATURITY: ###########################################
@@ -91,16 +80,14 @@ if model_selection == "Bond Pricing":
             zc_bond=  Run().zc_bond(inputs={"rate":rate, 
                                             "maturity":maturity, 
                                             "nominal":nominal})
-            st.write(f"Zero coupon bond price = {round(zc_bond['price'], 2)}")
-
+            display_results(zc_bond)
         elif zero_bool == "Fixed":
             fixed_bond = Run().fixed_bond(inputs={"coupon_rate":coupon_rate, 
                                                   "maturity":maturity, 
                                                   "nominal":nominal, 
                                                   "nb_coupon":nb_coupon, 
                                                   "rate":rate})
-
-            st.write(f"Fixed rate bond price = {round(fixed_bond['price'], 2)}")
+            display_results(fixed_bond)
             st.write(f"Yield to Maturity (YTM) of the fixed rate bond = {round(fixed_bond['ytm'], 2)}")
             col1, col2 = st.columns(2)
             col1.write(f"Duration = {round(fixed_bond['duration'], 2)}")
@@ -108,7 +95,7 @@ if model_selection == "Bond Pricing":
 
 
 ################## OPTIONS ################
-if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "Structured Products", "Spread"]:
+if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "Structured Products","Optional Strategy Products"]:
     st.subheader("Inputs to initialise the Brownian Motion")
     nb_simulations = st.number_input('Number of Simulations', value=1000, min_value=1)
     nb_steps = st.number_input('Number of Steps', value=100, min_value=1)
@@ -127,15 +114,7 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
     if model_selection == "Vanilla Options":
         st.header("Vanilla Options")
         option_type = st.radio('Option Type', ['Call', 'Put'])
-        underlying =  st.selectbox('Choose the underlyng asset for the option', 
-                                   ['non capitalized index', 'no dividend share', 'dividend share','forex rate'])
-        dividend, domestic_rate, forward_rate = None, None, None
-        if underlying =="dividend share":
-            dividend = st.slider('Dividend Rate', min_value=0.0, max_value=1.0, value=0.02)
-        elif underlying =="forex rate":
-            col1, col2 = st.columns(2)
-            domestic_rate = col1.slider('Domestic Rate', min_value=0.0, max_value=1.0, value=0.02)
-            forward_rate = col2.slider('Forward Rate', min_value=0.0, max_value=1.0, value=0.02)
+        underlying, dividend, domestic_rate, forward_rate = select_underlying_asset()
 
         if st.button('Simulate'):
             vanilla_option = Run().vanilla_option(inputs={**inputs_dict, 
@@ -144,25 +123,8 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                                                           ** {"dividend": dividend, 
                                                               "forward_rate": forward_rate,
                                                             "domestic_rate": domestic_rate,}})
-            col1, col2 = st.columns(2)
-            col1.write(f"Price = {round(vanilla_option['price'], 2)}")
-            col2.write(f"Exercise Probability = {round(vanilla_option['proba'], 2)}")
-            greeks_display = st.expander("Sensitivities")
-            cols = greeks_display.columns(5)
-            cols[0].write( f"$\delta$: {vanilla_option['delta']}")
-            cols[1].write( f"$\gamma$: {vanilla_option['gamma']}")
-            cols[2].write( f"$v$: {vanilla_option['vega']}")
-            cols[3].write( f"ρ: {vanilla_option['rho']}")
-            cols[4].write( f" θ: {vanilla_option['theta']}")
-            greeks_display.write(
-                f"""
-                - $\delta$ represents the equity exposure, i.e., the change in option price due to the spot. \n
-                - $\gamma$ represents the payout convexity, i.e., the change in delta due to the spot. \n
-                - $v$ represents the volatility exposure, i.e., the change in option price due to the volatility. \n
-                - ρ represents the interest rate exposure, i.e., the change in option price due to interest rates. \n
-                - θ represents the time decay, i.e., the change in option price due to time passing. \n
-                """
-            )
+            st.write(f"Payoff Amount = {round(vanilla_option['payoff'], 2)}")            
+            display_results(vanilla_option, proba=True, greeks=True)
 
     elif model_selection == "Binary Options":
         st.header("Binary Options")
@@ -178,17 +140,14 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
             lower_barrier = col1.number_input("Lower barrier", value=90.0)
             upper_barrier = col2.number_input("Upper barrier", value=110.0)
         payoff_amount = st.number_input('Payoff amount', value=100.0)
-        if st.button('Simulate Barrier Option'):
+        if st.button('Simulate Binary Option'):
             binary_option = Run().binary_option(inputs={**inputs_dict, 
                                                         **{"option_type":binary_input, 
                                                            "payoff_amount": payoff_amount}, 
                                                         ** {"barrier":barrier, 
                                                             "lower_barrier":lower_barrier, 
                                                             "upper_barrier":upper_barrier}})
-            col1, col2 = st.columns(2)
-            col1.write(f"Price = {round(binary_option['price'], 2)}")
-            col2.write(f"Exercise Probability = {round(binary_option['proba'], 2)}")
-
+            display_results(binary_option, proba=True)
     elif model_selection == "Barrier Options":
         st.header("Barrier Options")
         MC_sim = True
@@ -201,9 +160,8 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                                                               "barrier":barrier, 
                                                               "strike":strike_price}})
 
-            col1, col2 = st.columns(2)
-            col1.write(f"Price = {round(barrier_option['price'], 2)}")
-            col2.write(f"Exercise Probability = {round(barrier_option['proba'], 2)}")
+            display_results(barrier_option, proba=True)
+            
             plot_display = st.expander("Plot")
 
             price_paths = barrier_option['paths']
@@ -222,33 +180,88 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
 
             st.plotly_chart(fig)
 
-    elif model_selection == "Spread":
-        st.header("Spread Strategy Options")
-        option_type = st.radio('Option Type', ['Call', 'Put'])
-        underlying =  st.selectbox('Choose the underlyng asset for the option', 
-                                   ['non capitalized index', 'no dividend share', 'dividend share','forex rate'])
-        dividend, domestic_rate, forward_rate = None, None, None
-        if underlying =="dividend share":
-            dividend = st.slider('Dividend Rate', min_value=0.0, max_value=1.0, value=0.02)
-        elif underlying =="forex rate":
-            col1, col2 = st.columns(2)
-            domestic_rate = col1.slider('Domestic Rate', min_value=0.0, max_value=1.0, value=0.02)
-            forward_rate = col2.slider('Forward Rate', min_value=0.0, max_value=1.0, value=0.02)
+    elif model_selection == "Optional Strategy Products":
+        st.header("Optional Strategy Products")
+        opt_prod_choice =  st.selectbox('Choose the type of binary option', 
+                            ['Spread', 'Straddle', 'Strip', 'Strap'
+                            'Strangle', 'Butterfly', 
+                            'Call Spread', 'Put Spread']).lower().replace(" ", "_")
+        ### SPREAD ###
+        if opt_prod_choice == "spread":
+            option_type = st.radio('Option Type', ['Call', 'Put'])
+            underlying, dividend, domestic_rate, forward_rate = select_underlying_asset()
 
-        col1, col2 = st.columns(2)
-        short_strike = col1.number_input('Short strike', value=105)
-        long_strike = col2.number_input('Long strike', value=95)
-        
-        if st.button('Simulate'):
-            vanilla_option = Run().spread(inputs={**inputs_dict, 
-                                                          **{"underlying":underlying, 
-                                                            "option_type":option_type,
-                                                            "long_strike":long_strike, 
-                                                            "short_strike":short_strike},
-                                                          ** {"dividend": dividend, 
-                                                              "forward_rate": forward_rate,
-                                                            "domestic_rate": domestic_rate,}})
             col1, col2 = st.columns(2)
-            col1.write(f"Price = {round(vanilla_option['price'], 2)}")
-            col2.write(f"Exercise Probability = {round(vanilla_option['proba'], 2)}")
-        call_spread = Run().spread(inputs={**inputs_dict, **{"underlying":"dividend share", "option_type":"call", "dividend":0.02, "short_strike":105, "long_strike":95}}) 
+            short_strike = col1.number_input('Short strike', value=105)
+            long_strike = col2.number_input('Long strike', value=95)
+            
+            if st.button('Simulate Spread Options'):
+                spread = Run().spread(inputs={**inputs_dict, 
+                                            **{"underlying":underlying, 
+                                                "option_type":option_type,
+                                                "long_strike":long_strike, 
+                                                "short_strike":short_strike},
+                                            ** {"dividend": dividend, 
+                                                "forward_rate": forward_rate,
+                                                "domestic_rate": domestic_rate,}})
+                display_results(spread, greeks=True)
+
+                
+        if opt_prod_choice in ["straddle", "strangle", "strip", "strap"]:
+            option_pos = st.radio('Option position', ['Short', 'Long']).lower()
+            underlying, dividend, domestic_rate, forward_rate = select_underlying_asset()
+
+            col1, col2 = st.columns(2)
+            call_strike = col1.number_input('Call strike', value=105)
+            put_strike = col2.number_input('Put strike', value=95)
+            
+            if st.button('Simulate Strategy Options'):
+                option = Run().option_strategy(inputs={**inputs_dict, 
+                                            **{"underlying":underlying, 
+                                                "option_type":opt_prod_choice,
+                                                "call_strike":call_strike, 
+                                                "put_strike":put_strike},
+                                            ** {"dividend": dividend, 
+                                                "forward_rate": forward_rate,
+                                                "domestic_rate": domestic_rate,}})
+                display_results(option, greeks = True)
+
+    elif model_selection == "Structured Products":
+        st.header("Structured Products")
+        struct_choice = st.selectbox("Choose your structured product",
+                            ('Reverse Convertible', 'Certificat Outperformance'))
+        underlying, dividend, domestic_rate, forward_rate = select_underlying_asset()
+
+        if struct_choice == "Reverse Convertible":
+            nominal = st.number_input('Nominal Value', min_value=100, value=100, step=100)
+            col1, col2 = st.columns(2)
+            coupon_rate = col1.number_input('Coupon Rate', min_value=0.0, value=0.1, step=0.1)
+            nb_coupon = col2.number_input('Number of coupons', min_value=0, value=50, step=1)
+            coupon = st.number_input('Additional Coupon', min_value=0.0, value=0.1, step=0.1)
+        elif struct_choice == "Certificat Outperformance":
+            call_strike = st.number_input('Call Strike', min_value=100, value=100, step=100)
+
+        if st.button('Simulate Structured Products'):
+            if struct_choice == "Reverse Convertible":
+                reverse_convertible = Run().reverse_convertible(inputs={**inputs_dict, 
+                                                                        "coupon_rate":coupon_rate, 
+                                                                        "nominal":nominal, 
+                                                                        "nb_coupon":nb_coupon, 
+                                                                        "coupon":coupon, 
+                                                                        "underlying":underlying,
+                                                                        "strike" : strike_price,
+                                                                    ** {"dividend": dividend, 
+                                                                    "forward_rate": forward_rate,
+                                                                    "domestic_rate": domestic_rate,}})
+                display_results(reverse_convertible)
+
+            elif struct_choice == "Certificat Outperformance":
+                certificat_outperformance = Run().certificat_outperformance(inputs={**inputs_dict, 
+                                                                                    "underlying":underlying, 
+                                                                                    "call_strike":call_strike, 
+                                                                                ** {"dividend": dividend, 
+                                                                                "forward_rate": forward_rate,
+                                                                                "domestic_rate": domestic_rate,}})
+                display_results(certificat_outperformance)
+
+

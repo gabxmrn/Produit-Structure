@@ -2,9 +2,9 @@
 import numpy as np
 import pandas as pd
 
-from maturity import Maturity
-from rate import Rate
-from products import AbstractProduct
+from Products.maturity import Maturity
+from Products.rate import Rate
+from Products.products import AbstractProduct
 
 SHARE_NO_DIV = "no dividend share"
 SHARE_DIV = "dividend share"

@@ -1,6 +1,6 @@
-from graphs import GraphsOptions, GraphsStructuredProducts
-from rate import Rate
-from maturity import Maturity
+from Execution.graphs import GraphsOptions, GraphsStructuredProducts
+from Products.rate import Rate
+from Products.maturity import Maturity
 
 
 # Launch graph
