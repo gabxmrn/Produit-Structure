@@ -1,9 +1,10 @@
-from Products.products import VanillaOption, OptionProducts, Spread, ButterflySpread, ReverseConvertible, CertificatOutperformance
-from Products.rate import Rate
-from Products.maturity import Maturity
-from Products.brownianMotion import BrownianMotion
+from Products.optionalProducts import VanillaOption, OptionProducts, Spread, ButterflySpread
+from Products.structuredProducts import CertificatOutperformance, ReverseConvertible
+from Market.rate import Rate
+from Market.maturity import Maturity
+from Market.brownianMotion import BrownianMotion
 from Products.bond import FixedBond
-from Products.riskAnalysis import OptionRisk, OptionProductsRisk, SpreadRisk, ButterflySpreadRisk, StructuredProductsRisk
+from RisksAnalysis.risks import OptionRisk, OptionProductsRisk, SpreadRisk, ButterflySpreadRisk, StructuredProductsRisk
 
 import matplotlib.pyplot as plt
 

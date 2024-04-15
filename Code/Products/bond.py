@@ -1,6 +1,6 @@
-from Products.maturity import Maturity
-from Products.rate import Rate
-from Products.optim import Optim
+from Market.maturity import Maturity
+from Market.rate import Rate
+from Market.optim import Optim
 
 
 class FixedBond:

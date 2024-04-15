@@ -1,5 +1,6 @@
 import streamlit as st
-from Execution.run import StressTest
+from RisksAnalysis.stressScenarios import StressScenario
+
 def display_greeks(greeks_dict):
     """
     Function to display sensitivity (Greeks) values in a consistent format.
@@ -12,8 +13,8 @@ def display_greeks(greeks_dict):
     cols[0].write(f"$\delta$: {greeks_dict['delta']}")
     cols[1].write(f"$\gamma$: {greeks_dict['gamma']}")
     cols[2].write(f"$v$: {greeks_dict['vega']}")
-    cols[3].write(f"ρ: {greeks_dict['rho']}")
-    cols[4].write(f" θ: {greeks_dict['theta']}")
+    cols[3].write(f"ρ : {greeks_dict['rho']}")
+    cols[4].write(f"θ : {greeks_dict['theta']}") 
     
     st.write(
         """
@@ -24,6 +25,7 @@ def display_greeks(greeks_dict):
         - θ represents the time decay, i.e., the change in option price due to time passing.
         """
     )
+    
 def select_underlying_asset():
     """
     Function to display and select the underlying asset and related parameters.
@@ -65,5 +67,5 @@ def stress_test_input():
     col1, col2 = st.columns(2)
     new_val = col1.number_input('New Spot', value=120, step=10)
     new_mat = col2.number_input('New Maturity in years',  value=0.5, min_value=0.0)
-    stress_test = StressTest(new_spot=new_val, new_maturity_in_years=new_mat)
+    stress_test = StressScenario(new_spot=new_val, new_maturity_in_years=new_mat)
     return stress_test

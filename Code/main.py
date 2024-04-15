@@ -1,7 +1,7 @@
+import subprocess
 
-"""
-    Résumé A faire : 
-        - Risques + Graphiques Options à barrières
-        - Risques + Graphiques Options binaires  
-        - Risques Produits structurés
-"""
+def main():
+    subprocess.run(["streamlit", "run", "Code/app.py"])
+
+if __name__ == "__main__":
+    main()

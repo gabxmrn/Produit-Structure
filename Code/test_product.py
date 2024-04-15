@@ -1,8 +1,9 @@
 from datetime import datetime
 
-from Products.maturity import Maturity 
-from Products.rate import Rate
-from Execution.run import Run, StressTest
+from Market.maturity import Maturity 
+from Market.rate import Rate
+from Execution.run import Run
+from RisksAnalysis.stressScenarios import StressScenario
 
 ########################################### TEST MATURITY, RATE & ST : ###########################################
 
@@ -27,7 +28,7 @@ print("           ")
 #### STRESS TEST
 
 # stress_test = StressTest(new_spot=120, new_begin_date=datetime(2024, 7, 7))
-stress_test = StressTest(new_spot=120, new_maturity_in_years=0.5)
+stress_test = StressScenario(new_spot=120, new_maturity_in_years=0.5)
 
 ### BASICS INPUTS : 
 

@@ -2,9 +2,9 @@ import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime
-from Products.maturity import Maturity
-from Products.rate import Rate
-from Execution.run import Run, StressTest
+from Market.maturity import Maturity
+from Market.rate import Rate
+from Execution.run import Run
 from Execution.tools_st import select_underlying_asset, display_results, stress_test_input
 
 st.title('Financial Models Analysis')
@@ -15,7 +15,9 @@ model_selection = st.sidebar.selectbox("Select a model to analyse",
                                         "Optional Strategy Products"])
 
 st.header("Common Inputs")
+
 ###########################################  MATURITY: ###########################################
+
 st.subheader("Maturity")
 maturity_type = st.selectbox('Maturity Type', ['Maturity in years', 'Computed'])
 if maturity_type == 'Maturity in years':
@@ -32,7 +34,8 @@ else:
                         end_date=end_date, 
                         day_count_convention=day_count_convention)
 
-###########################################  RATE  ###########################################
+##############################################  RATE  ############################################
+
 st.subheader("Rate")
 rate_input_type = st.selectbox("Select the rate input type",
                                 ["Specific Rate", "Curve"])
@@ -65,7 +68,8 @@ else:
 ##### STRESS TESTING ####    
 s_t = stress_test_input()
 
-#################### BOND PRICING  ######################
+######################################## BOND PRICING  ###########################################
+
 if model_selection == "Bond Pricing":
     st.header("Bond Pricing")
     zero_bool = st.radio("Type of coupon detachment",
@@ -107,9 +111,8 @@ if model_selection == "Bond Pricing":
                                    "rate":rate})
             display_results(stress_test, s_t=True)
 
+############################################# OPTIONS ############################################
 
-
-################## OPTIONS ################
 if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "Structured Products","Optional Strategy Products"]:
     st.subheader("Inputs to initialise the Brownian Motion")
     nb_simulations = st.number_input('Number of Simulations', value=1000, min_value=1)
@@ -149,8 +152,6 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
             display_results(stress_test, proba=True, greeks=True, s_t=True)
 
 
-
-
     elif model_selection == "Binary Options":
         st.header("Binary Options")
         binary_input =  st.selectbox('Choose the type of binary option', 
@@ -174,7 +175,7 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                                                             "lower_barrier":lower_barrier, 
                                                             "upper_barrier":upper_barrier}})
             display_results(binary_option, proba=True)
-            stress_test = s_t.vanilla_option(inputs={**inputs_dict, 
+            stress_test = s_t.binary_option(inputs={**inputs_dict, 
                                 **{"option_type":binary_input, 
                                    "payoff_amount": payoff_amount}, 
                                 ** {"barrier":barrier, 
