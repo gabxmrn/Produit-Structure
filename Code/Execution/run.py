@@ -231,7 +231,6 @@ class Run :
         nominal = self._input("nominal", inputs)
         nb_coupon = self._input("nb_coupon", inputs)
         rate = self._input("rates", inputs)
-        coupon = self._input("coupon", inputs)
         
         if underlying == FOREX :
             # For options on exchange rates:
@@ -248,7 +247,7 @@ class Run :
         put_process = process.pricing(put)
         
         product = ReverseConvertible({"put":put, "put price": put_process["price"], 
-                         "bond":bond, "bond price": bond.price(), "coupon":coupon})
+                         "bond":bond, "bond price": bond.price()})
         
         return {"price":round(product.price(), 2)}
         

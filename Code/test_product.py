@@ -189,9 +189,9 @@ print("           ")
 ########################################### TEST STRUCTURED PRODUCTS : #######################################
 
 print("REVERSE CONVERTIBLE : ")
-reverse_convertible = Run().reverse_convertible(inputs={**inputs_dict, **{"coupon_rate":0.1, "maturity":maturity, "nominal":100, "nb_coupon":22, "coupon":0.05, "strike":100, "underlying":"no dividend share"}})
+reverse_convertible = Run().reverse_convertible(inputs={**inputs_dict, **{"coupon_rate":0.1, "maturity":maturity, "nominal":100, "nb_coupon":22, "strike":100, "underlying":"no dividend share"}})
 print(reverse_convertible)
-st_reverse_convertible = stress_test.reverse_convertible(inputs={**inputs_dict, **{"coupon_rate":0.1, "maturity":maturity, "nominal":100, "nb_coupon":22, "coupon":0.05, "strike":100, "underlying":"no dividend share"}})
+st_reverse_convertible = stress_test.reverse_convertible(inputs={**inputs_dict, **{"coupon_rate":0.1, "maturity":maturity, "nominal":100, "nb_coupon":22, "strike":100, "underlying":"no dividend share"}})
 print(st_reverse_convertible)
 
 print("CERTIFICAT OUTPERFORMANCE : ")

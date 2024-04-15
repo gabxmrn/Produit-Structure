@@ -391,17 +391,13 @@ class ReverseConvertible(AbstractProduct):
         self._bond = self._inputs.get("bond")
         self._bond_price = self._inputs.get("bond price")
 
-        # Guaranteed Coupon
-        self._coupon = self._inputs.get("coupon")
-
     def payoff(self, spot: float) -> float:
         """ Calculate and returns the payoff of the reverse convertible. """
-        return self._short_put.payoff(spot) + self._bond.nominal + self._coupon
+        return - self._short_put.payoff(spot) + self._bond.nominal
 
     def price(self) -> float:
         """ Calculate and returns the price of the reverse convertible. """
-        coupon_pv = self._coupon  * np.exp(- self._bond.rate.discount_factor(self._bond.maturity)) 
-        return self._bond.price() - self._short_put_price - coupon_pv
+        return - self._bond.price() + self._short_put_price
 
 
 class CertificatOutperformance(AbstractProduct):
@@ -442,8 +438,8 @@ class CertificatOutperformance(AbstractProduct):
 
     def payoff(self, spot: float) -> float:
         """ Calculate and returns the payoff of the certificat outperformance. """
-        return self._zs_call.payoff(spot) + (1 - self.participation_level()) * self._call.payoff(spot)
+        return self._zs_call.payoff(spot) + (self.participation_level() - 1) * self._call.payoff(spot)
 
     def price(self) -> float:
         """ Calculate and returns the price of the certificat outperformance. """
-        return self._zs_call_price + (1 - self.participation_level()) * self._call_price
+        return self._zs_call_price + (self.participation_level() - 1) * self._call_price

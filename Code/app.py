@@ -237,7 +237,6 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
             col1, col2 = st.columns(2)
             coupon_rate = col1.number_input('Coupon Rate', min_value=0.0, value=0.1, step=0.1)
             nb_coupon = col2.number_input('Number of coupons', min_value=0, value=50, step=1)
-            coupon = st.number_input('Additional Coupon', min_value=0.0, value=0.1, step=0.1)
         elif struct_choice == "Certificat Outperformance":
             call_strike = st.number_input('Call Strike', min_value=100, value=100, step=100)
 
@@ -246,8 +245,7 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                 reverse_convertible = Run().reverse_convertible(inputs={**inputs_dict, 
                                                                         "coupon_rate":coupon_rate, 
                                                                         "nominal":nominal, 
-                                                                        "nb_coupon":nb_coupon, 
-                                                                        "coupon":coupon, 
+                                                                        "nb_coupon":nb_coupon,
                                                                         "underlying":underlying,
                                                                         "strike" : strike_price,
                                                                     ** {"dividend": dividend, 
