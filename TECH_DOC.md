@@ -3,10 +3,11 @@
 - [Document Technique](#document-technique)
   - [Obligations à taux fixes](#obligations-à-taux-fixes)
     - [Valeur de l'obligation](#valeur-de-lobligation)
-    - [Sous-jacents (TO DO)](#sous-jacents-to-do)
+    - [Prix du sous-jacents](#prix-du-sous-jacents)
     - [Risque d'une obligation](#risque-dune-obligation)
   - [Options Vanilles](#options-vanilles)
-    - [Prix d'une option vanille (TO DO)](#prix-dune-option-vanille-to-do)
+    - [Call](#call)
+    - [Put](#put)
     - [Mesures de risque : les grecques](#mesures-de-risque--les-grecques)
   - [Produits à stratégie optionnelle](#produits-à-stratégie-optionnelle)
     - [Spreads](#spreads)
@@ -38,7 +39,22 @@ avec:
 - \(N\): nombre de périodes avant maturité ;
 - \(F\): valeur de l'obligation au moment de son émission.
 
-### Sous-jacents (TO DO)
+### Prix du sous-jacents
+
+*__Action sans dividendes :__*
+Le spot est égal au prix du sous-jacent entré.
+
+*__Action avec dividendes :__*
+Si l'entreprise du sous-jacent verse un dividende, il est nécessaire de le prendre en compte. Pour ce faire, nous calculons la valeur actualisée de tous les dividendes jusqu'à maturité et les retirons du prix du sous-jacent.
+
+*__Indice capitalisé :__*
+Ce sous-jacent est équivalent à une action sans dividendes.
+
+*__Indices non-capitalisé :__*
+Ce sous-jacent est équivalent à une action avec dividendes.
+
+*__Taux de change :__*
+Le spot est alors égale à la valeur actualisée du prix du sous-jacent en fonction du taux de change à terme et de la maturité de l'option.
 
 ### Risque d'une obligation
 
@@ -52,7 +68,8 @@ $$C=\frac{c}{m}\sum^N_{t=1}\exp(-\frac{r_{YTM}}{m}\times t)\times t^2$$
 
 ## Options Vanilles
 
-*__Call :__*
+### Call
+
 Une option d'achat donne le droit à son détenteur d'acheter une certaine quantité d'un actif sous-jacent à une date future donnée et à un prix convenu en amont.
 
 Un investisseur peuvent faire le choix d'avoir une position short (vendeuse) ou long (acheteuse) sur le call. Son payoff sera alors:
@@ -60,7 +77,8 @@ Un investisseur peuvent faire le choix d'avoir une position short (vendeuse) ou 
 - Position Long : \(P=\max(S_t - K,0)\)
 - Position Short : \(P=\min(K - S_t,0)\)
 
-*__Put :__*
+### Put
+
 Une option de vente donne le droit à son détenteur de vendre une certaine quantité d'un actif sous-jacent à une date future donnée et à un prix convenu en amont.
 
 Un investisseur peuvent faire le choix d'avoir une position short (vendeuse) ou long (acheteuse) sur le put. Son payoff sera alors:
@@ -68,11 +86,18 @@ Un investisseur peuvent faire le choix d'avoir une position short (vendeuse) ou 
 - Position Long : \(P=\max(K - S_t,0)\)
 - Position Short : \(P=\min(S_t - K,0)\)
 
-### Prix d'une option vanille (TO DO)
-
 ### Mesures de risque : les grecques
 
-Instruments de base de la gestion financière des options qui découlent du modèle de Black-Scholes & Merton. Ces indicateurs calculent l'impact sur le prix de l'option d'une variation des paramètres qui le forment :
+Instruments de base de la gestion financière des options qui découlent du modèle de Black-Scholes & Merton. Ces indicateurs calculent l'impact sur le prix de l'option d'une variation des paramètres qui le forment.
+
+Pour rappel, le modèle de Black-Scholes & Merton est le suivant :
+$$C(S_0,K,r,T,\sigma)=S_0\mathcal{N}(d_1) - K\exp(-rT)\mathcal{d_2}$$ $$P(S_0,K,r,T,\sigma)=-S_0\mathcal{N}(-d_1)+K\exp(-rT)\mathcal{N}(d_2)$$
+avec :
+
+- \(d_1=\frac{1}{\sigma\sqrt(T)}[\ln(\frac{S_0}{K})+(r+\frac{1}{2}\sigma^2)T]\)
+- \(d_2=d_1-\sigma\sqrt(T)\)
+
+Afin d'étudier le risques de nos options, nous calculons les grecques suivants :
 
 - Delta: variations de prix du sous-jacent ;
 
