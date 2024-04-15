@@ -227,7 +227,7 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
     elif model_selection == "Optional Strategy Products":
         st.header("Optional Strategy Products")
         opt_prod_choice =  st.selectbox('Choose the type of binary option', 
-                            ['Spread', 'Straddle', 'Strip', 'Strap'
+                            ['Spread', 'Straddle', 'Strip', 'Strap',
                             'Strangle', 'Butterfly']).lower().replace(" ", "_")
         
         ### SPREAD ###
@@ -272,6 +272,7 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                 option = Run().option_strategy(inputs={**inputs_dict, 
                                             **{"underlying":underlying, 
                                                 "option_type":opt_prod_choice,
+                                                "option_position":option_pos,
                                                 "call_strike":call_strike, 
                                                 "put_strike":put_strike},
                                             ** {"dividend": dividend, 
@@ -281,11 +282,41 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                 stress_test = s_t.option_strategy(inputs={**inputs_dict, 
                             **{"underlying":underlying, 
                                 "option_type":opt_prod_choice,
+                                "option_position":option_pos,
                                 "call_strike":call_strike, 
                                 "put_strike":put_strike},
                             ** {"dividend": dividend, 
                                 "forward_rate": forward_rate,
                                 "domestic_rate": domestic_rate,}})
+                display_results(stress_test, greeks=True, s_t=True)
+
+        elif opt_prod_choice == "butterfly":
+            underlying, dividend, domestic_rate, forward_rate = select_underlying_asset()
+
+            col1, col2, col3 = st.columns(3)
+            strike1 = col1.number_input('Strike 1', value=95)
+            strike2 = col2.number_input('Strike 2', value=105)
+            strike3 = col3.number_input('Strike 2', value=110)
+            
+
+            if st.button('Simulate Butterfly'):
+                butterfly = Run().butterfly(inputs={**inputs_dict, 
+                                              **{"underlying":underlying, 
+                                                  "strike_1":strike1,
+                                                  "strike_2":strike2,
+                                                  "strike_3":strike3},
+                                              ** {"dividend": dividend, 
+                                                  "forward_rate": forward_rate,
+                                                  "domestic_rate": domestic_rate,}})
+                display_results(butterfly, greeks=True)
+                stress_test = s_t.butterfly(inputs={**inputs_dict, 
+                                  **{"underlying":underlying, 
+                                    "strike_1":strike1,
+                                    "strike_2":strike2,
+                                    "strike_3":strike3},
+                                  ** {"dividend": dividend, 
+                                      "forward_rate": forward_rate,
+                                      "domestic_rate": domestic_rate,}})     
                 display_results(stress_test, greeks=True, s_t=True)
 
     elif model_selection == "Structured Products":
