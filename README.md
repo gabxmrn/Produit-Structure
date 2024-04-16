@@ -37,16 +37,14 @@ pip install -r requirements.txt
 ```
 
 3. Run the application
-
 ```bash
-streamlit run app.py
+python main.py # you can also run streamlit run app.py 
 ```
 
-Alternatively, you can modify the information for each product in the `main.py` file from Python directly :
-3.1 Run from Python
-
+Alternatively, you can modify the information for each product directly in the `test_product.py` file:
+4. Run from Python
 ```bash
-python main.py
+python test_product.py
 ```
 
 ### Usage
