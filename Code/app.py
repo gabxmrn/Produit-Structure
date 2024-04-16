@@ -6,6 +6,21 @@ from Market.maturity import Maturity
 from Market.rate import Rate
 from Execution.run import Run
 from Execution.tools_st import select_underlying_asset, display_results, stress_test_input
+from Execution.graphs import GraphsOptions, GraphsStructuredProducts
+
+
+# # Launch graph
+# # graph = GraphsOptions(graph_type = "delta",
+# #                rate=Rate(0.03, rate_type="continuous"), maturity=Maturity(0.5), vol=0.2,
+# #                underlying = "no dividend share", opt_type = "butterfly spread", long_short = "long", strike = 95, strike2_strangle_spread=110, strike3_spread=125)
+# # graph.plot()
+
+# graph = GraphsStructuredProducts(graph_type="profit",
+#                                  rate=Rate(0.03, rate_type="continuous"), maturity=Maturity(0.5), vol=0.2,
+#                                  underlying = "no dividend share", prod_type="certificat outperformance", strike=102,
+#                                  coupon_rate=0.02, nb_coupon=12,nominal=100)
+# graph.plot()
+
 
 st.title('Financial Models Analysis')
 
@@ -128,10 +143,18 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                     "volatility":volatility,
                     "maturity":maturity, 
                     "strike":strike_price}
-    
+    ##### FOR PLOTTLING #### 
+    col1, col2 = st.columns(2)
+    plot_type = col1.selectbox("Type of graph you want to display", 
+                                ["payoff", "profit", "delta", "gamma", "vega", "theta", "rho"])
+    long_short = col2.radio("Long or Short position", 
+                          ["Long", "Short"]).lower()
+
+
+
     if model_selection == "Vanilla Options":
         st.header("Vanilla Options")
-        option_type = st.radio('Option Type', ['Call', 'Put'])
+        option_type = st.radio('Option Type', ['Call', 'Put']).lower()
         underlying, dividend, domestic_rate, forward_rate = select_underlying_asset()
 
         if st.button('Simulate'):
@@ -150,7 +173,15 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                                     "forward_rate": forward_rate,
                                   "domestic_rate": domestic_rate,}})
             display_results(stress_test, proba=True, greeks=True, s_t=True)
-
+                
+            graph = GraphsOptions(graph_type = plot_type,
+                                    rate=rate, maturity=maturity, vol=volatility,
+                                    underlying = underlying, 
+                                    opt_type = option_type, 
+                                    long_short = long_short, 
+                                    strike = strike_price)
+            fig = graph.plot()  
+            st.plotly_chart(fig)  
 
     elif model_selection == "Binary Options":
         st.header("Binary Options")
@@ -229,17 +260,17 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
         st.header("Optional Strategy Products")
         opt_prod_choice =  st.selectbox('Choose the type of binary option', 
                             ['Spread', 'Straddle', 'Strip', 'Strap',
-                            'Strangle', 'Butterfly']).lower().replace(" ", "_")
+                            'Strangle', 'Butterfly Spread']).lower().replace(" ", "_")
         
         ### SPREAD ###
         if opt_prod_choice == "spread":
-            option_type = st.radio('Option Type', ['Call', 'Put'])
+            option_type = st.radio('Option Type', ['Call', 'Put']).lower()
             underlying, dividend, domestic_rate, forward_rate = select_underlying_asset()
 
             col1, col2 = st.columns(2)
             short_strike = col1.number_input('Short strike', value=105)
             long_strike = col2.number_input('Long strike', value=95)
-
+            agg_opt_type = option_type +' ' +opt_prod_choice
             if st.button('Simulate Spread Options'):
                 spread = Run().spread(inputs={**inputs_dict, 
                                               **{"underlying":underlying, 
@@ -259,7 +290,15 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                                       "forward_rate": forward_rate,
                                       "domestic_rate": domestic_rate,}})     
                 display_results(stress_test, greeks=True, s_t=True)
-
+                graph = GraphsOptions(graph_type = plot_type,
+                                      long_short = long_short,
+                                    rate=rate, maturity=maturity, vol=volatility,
+                                    underlying = underlying, 
+                                    opt_type = agg_opt_type, 
+                                    strike=long_strike, 
+                                    strike2_strangle_spread=short_strike)
+                fig = graph.plot()  
+                st.plotly_chart(fig)  
                 
         elif opt_prod_choice in ["straddle", "strangle", "strip", "strap"]:
             option_pos = st.radio('Option position', ['Short', 'Long']).lower()
@@ -290,8 +329,15 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                                 "forward_rate": forward_rate,
                                 "domestic_rate": domestic_rate,}})
                 display_results(stress_test, greeks=True, s_t=True)
-
-        elif opt_prod_choice == "butterfly":
+                graph = GraphsOptions(graph_type = plot_type,
+                                      long_short=option_pos, 
+                                    rate=rate, maturity=maturity, vol=volatility,
+                                    underlying = underlying, 
+                                    opt_type = opt_prod_choice, 
+                                    strike=strike_price, strike2_strangle_spread=put_strike)
+                fig = graph.plot()  
+                st.plotly_chart(fig)  
+        elif opt_prod_choice == "butterfly_spread":
             underlying, dividend, domestic_rate, forward_rate = select_underlying_asset()
 
             col1, col2, col3 = st.columns(3)
@@ -319,6 +365,14 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                                       "forward_rate": forward_rate,
                                       "domestic_rate": domestic_rate,}})     
                 display_results(stress_test, greeks=True, s_t=True)
+                graph = GraphsOptions(graph_type = plot_type,
+                                    rate=rate, maturity=maturity, vol=volatility,
+                                    underlying = underlying, 
+                                    opt_type = opt_prod_choice.replace("_", " "), 
+                                    long_short = long_short, strike = strike_price, 
+                                    strike2_strangle_spread = strike2, strike3_spread = strike3)
+                fig = graph.plot()  
+                st.plotly_chart(fig)  
 
     elif model_selection == "Structured Products":
         st.header("Structured Products")
@@ -356,6 +410,15 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                                                 "forward_rate": forward_rate,
                                                 "domestic_rate": domestic_rate,}})
                 display_results(stress_test, s_t=True)
+                graph = GraphsStructuredProducts(graph_type=plot_type,
+                                                rate=rate, maturity=maturity, vol=volatility,
+                                                underlying = underlying, prod_type=struct_choice.lower(), 
+                                                strike=strike_price,
+                                                coupon_rate=coupon_rate, 
+                                                nb_coupon=nb_coupon,
+                                                nominal=nominal)
+                fig = graph.plot()  
+                st.plotly_chart(fig) 
 
             elif struct_choice == "Certificat Outperformance":
                 certificat_outperformance = Run().certificat_outperformance(inputs={**inputs_dict, 
@@ -372,5 +435,12 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                                                    "forward_rate": forward_rate,
                                                    "domestic_rate": domestic_rate,}})
                 display_results(stress_test, s_t=True)
+                graph = GraphsStructuredProducts(graph_type=plot_type,
+                                rate=rate, maturity=maturity, vol=volatility,
+                                underlying = underlying, prod_type=struct_choice.lower(), 
+                                strike=call_strike)
+                fig = graph.plot()  
+                st.plotly_chart(fig)  
+            
 
 

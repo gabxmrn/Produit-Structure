@@ -5,8 +5,7 @@ from Market.maturity import Maturity
 from Market.brownianMotion import BrownianMotion
 from Products.bond import FixedBond
 from RisksAnalysis.risks import OptionRisk, OptionProductsRisk, SpreadRisk, ButterflySpreadRisk, StructuredProductsRisk
-
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 
 class GraphsOptions:
@@ -54,8 +53,10 @@ class GraphsOptions:
         if self._graph_type not in ["payoff", "profit", "delta", "gamma", "vega", "theta", "rho"]:
             raise Exception("Input error: graph type must be payoff, profit, delta, gamma, vega, theta, rho.")
 
-        if strike >= strike2_strangle_spread or strike >= strike3_spread or strike2_strangle_spread >= strike3_spread:
-            raise Exception("Input error: Strikes must be as follow : strike < strike2 < strik3.")
+        if strike2_strangle_spread is not None and strike3_spread is not None:
+            if strike >= strike2_strangle_spread or strike >= strike3_spread or strike2_strangle_spread >= strike3_spread:
+        # if strike >= strike2_strangle_spread or strike >= strike3_spread or strike2_strangle_spread >= strike3_spread:
+                raise Exception("Input error: Strikes must be as follow : strike < strike2 < strik3.")
 
         # Process creation
         self._rate = rate
@@ -207,8 +208,9 @@ class GraphsOptions:
 
         return greeks
 
+
     def plot(self) -> None:
-        """ Graph the payoff, profit, or greeks of the product for a range of spots. """
+        """ Graph the payoff, profit, or greeks of the product for a range of spots using Plotly. """
         if self._graph_type == "payoff":
             y_series = self.payoff()
         elif self._graph_type == "profit":
@@ -216,23 +218,30 @@ class GraphsOptions:
         else:
             y_series = self.greeks()
 
+        x_range = range(0, 200)
         if self._graph_type in ["payoff", "profit"]:
             y_below_zero = [y if y <= 0 else None for y in y_series]
             y_above_zero = [y if y > 0 else None for y in y_series]
 
-            plt.plot(range(0, 200), y_below_zero, color='red', label='Below 0')
-            plt.plot(range(0, 200), y_above_zero, color='green', label='Above 0')
-            plt.axhline(0, color='black', linewidth=0.5)
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=list(x_range), y=y_below_zero, mode='lines', name='Below 0', line=dict(color='red')))
+            fig.add_trace(go.Scatter(x=list(x_range), y=y_above_zero, mode='lines', name='Above 0', line=dict(color='green')))
+            fig.add_shape(type="line", x0=min(x_range), y0=0, x1=max(x_range), y1=0, line=dict(color="black", width=1))
+
         else:
-            plt.plot(range(1, 200), y_series, color='blue')
-            plt.axhline(0, color='black', linewidth=0.5)
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=list(x_range)[1:], y=y_series, mode='lines', name=self._graph_type.capitalize(), line=dict(color='blue')))
+            fig.add_shape(type="line", x0=min(x_range), y0=0, x1=max(x_range), y1=0, line=dict(color="black", width=1))
 
-        plt.xlabel('Spot Price')
-        plt.ylabel(self._graph_type.capitalize())
-        plt.title(f'{self._long_short.title()} {self._opt_type.capitalize()} Option {self._graph_type.capitalize()}')
-        plt.show()
-
-
+        fig.update_layout(
+            title=f'{self._long_short.title()} {self._opt_type.capitalize()} Option {self._graph_type.capitalize()}',
+            xaxis_title='Spot Price',
+            yaxis_title=self._graph_type.capitalize(),
+            showlegend=True
+        )
+        
+        return fig
+    
 class GraphsStructuredProducts:
     """ A class representing the graphic of a structured product.
     Argument:
@@ -364,26 +373,36 @@ class GraphsStructuredProducts:
 
         return greeks
 
+
     def plot(self) -> None:
-        """ Graph the payoff, profit or greeks of the structured product for a range of spots. """
+        """ Graph the payoff, profit or greeks of the structured product for a range of spots using Plotly. """
         if self._graph_type == "payoff":
             y_series = self.payoff()
         elif self._graph_type == "profit":
             y_series = self.price()
-        else: y_series = self.greeks()
+        else:
+            y_series = self.greeks()
 
+        x_range = range(0, 200)
         if self._graph_type in ["payoff", "profit"]:
             y_below_zero = [y if y <= 0 else None for y in y_series]
             y_above_zero = [y if y > 0 else None for y in y_series]
 
-            plt.plot(range(0, 200), y_below_zero, color='red', label='Below 0')
-            plt.plot(range(0, 200), y_above_zero, color='green', label='Above 0')
-            plt.axhline(0, color='black', linewidth=0.5)
-        else:
-            plt.plot(range(1, 200), y_series, color='blue')
-            plt.axhline(0, color='black', linewidth=0.5)
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=list(x_range), y=y_below_zero, mode='lines', name='Below 0', line=dict(color='red')))
+            fig.add_trace(go.Scatter(x=list(x_range), y=y_above_zero, mode='lines', name='Above 0', line=dict(color='green')))
+            fig.add_shape(type="line", x0=min(x_range), y0=0, x1=max(x_range), y1=0, line=dict(color="black", width=1))
 
-        plt.xlabel('Spot Price')
-        plt.ylabel(self._graph_type.capitalize())
-        plt.title(f'{self._prod_type.title()} Option {self._graph_type.capitalize()}')
-        plt.show()
+        else:
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=list(x_range)[1:], y=y_series, mode='lines', name=self._graph_type.capitalize(), line=dict(color='blue')))
+            fig.add_shape(type="line", x0=min(x_range), y0=0, x1=max(x_range), y1=0, line=dict(color="black", width=1))
+
+        fig.update_layout(
+            title=f'{self._prod_type.title()} Option {self._graph_type.capitalize()}',
+            xaxis_title='Spot Price',
+            yaxis_title=self._graph_type.capitalize(),
+            showlegend=True
+        )
+        
+        return fig
