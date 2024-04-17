@@ -173,15 +173,16 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                                     "forward_rate": forward_rate,
                                   "domestic_rate": domestic_rate,}})
             display_results(stress_test, proba=True, greeks=True, s_t=True)
-                
-            graph = GraphsOptions(graph_type = plot_type,
-                                    rate=rate, maturity=maturity, vol=volatility,
-                                    underlying = underlying, 
-                                    opt_type = option_type, 
-                                    long_short = long_short, 
-                                    strike = strike_price)
-            fig = graph.plot()  
-            st.plotly_chart(fig)  
+
+            if underlying in ["no dividend share","non capitalized index"]:
+                graph = GraphsOptions(graph_type = plot_type,
+                                        rate=rate, maturity=maturity, vol=volatility,
+                                        underlying = underlying, 
+                                        opt_type = option_type, 
+                                        long_short = long_short, 
+                                        strike = strike_price)
+                fig = graph.plot()  
+                st.plotly_chart(fig)  
 
     elif model_selection == "Binary Options":
         st.header("Binary Options")
@@ -258,7 +259,7 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
 
     elif model_selection == "Optional Strategy Products":
         st.header("Optional Strategy Products")
-        opt_prod_choice =  st.selectbox('Choose the type of binary option', 
+        opt_prod_choice =  st.selectbox('Choose the type of strategy to implement', 
                             ['Spread', 'Straddle', 'Strip', 'Strap',
                             'Strangle', 'Butterfly Spread']).lower().replace(" ", "_")
         
@@ -290,15 +291,17 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                                       "forward_rate": forward_rate,
                                       "domestic_rate": domestic_rate,}})     
                 display_results(stress_test, greeks=True, s_t=True)
-                graph = GraphsOptions(graph_type = plot_type,
-                                      long_short = long_short,
-                                    rate=rate, maturity=maturity, vol=volatility,
-                                    underlying = underlying, 
-                                    opt_type = agg_opt_type, 
-                                    strike=long_strike, 
-                                    strike2_strangle_spread=short_strike)
-                fig = graph.plot()  
-                st.plotly_chart(fig)  
+                
+                if underlying in ["no dividend share","non capitalized index"]:
+                    graph = GraphsOptions(graph_type = plot_type,
+                                        long_short = long_short,
+                                        rate=rate, maturity=maturity, vol=volatility,
+                                        underlying = underlying, 
+                                        opt_type = agg_opt_type, 
+                                        strike=long_strike, 
+                                        strike2_strangle_spread=short_strike)
+                    fig = graph.plot()  
+                    st.plotly_chart(fig)  
                 
         elif opt_prod_choice in ["straddle", "strangle", "strip", "strap"]:
             option_pos = st.radio('Option position', ['Short', 'Long']).lower()
@@ -329,14 +332,16 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                                 "forward_rate": forward_rate,
                                 "domestic_rate": domestic_rate,}})
                 display_results(stress_test, greeks=True, s_t=True)
-                graph = GraphsOptions(graph_type = plot_type,
-                                      long_short=option_pos, 
-                                    rate=rate, maturity=maturity, vol=volatility,
-                                    underlying = underlying, 
-                                    opt_type = opt_prod_choice, 
-                                    strike=strike_price, strike2_strangle_spread=put_strike)
-                fig = graph.plot()  
-                st.plotly_chart(fig)  
+
+                if underlying in ["no dividend share","non capitalized index"]:
+                    graph = GraphsOptions(graph_type = plot_type,
+                                        long_short=option_pos, 
+                                        rate=rate, maturity=maturity, vol=volatility,
+                                        underlying = underlying, 
+                                        opt_type = opt_prod_choice, 
+                                        strike=strike_price, strike2_strangle_spread=put_strike)
+                    fig = graph.plot()  
+                    st.plotly_chart(fig)  
         elif opt_prod_choice == "butterfly_spread":
             underlying, dividend, domestic_rate, forward_rate = select_underlying_asset()
 
@@ -365,14 +370,16 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                                       "forward_rate": forward_rate,
                                       "domestic_rate": domestic_rate,}})     
                 display_results(stress_test, greeks=True, s_t=True)
-                graph = GraphsOptions(graph_type = plot_type,
-                                    rate=rate, maturity=maturity, vol=volatility,
-                                    underlying = underlying, 
-                                    opt_type = opt_prod_choice.replace("_", " "), 
-                                    long_short = long_short, strike = strike_price, 
-                                    strike2_strangle_spread = strike2, strike3_spread = strike3)
-                fig = graph.plot()  
-                st.plotly_chart(fig)  
+
+                if underlying in ["no dividend share","non capitalized index"]:
+                    graph = GraphsOptions(graph_type = plot_type,
+                                        rate=rate, maturity=maturity, vol=volatility,
+                                        underlying = underlying, 
+                                        opt_type = opt_prod_choice.replace("_", " "), 
+                                        long_short = long_short, strike = strike_price, 
+                                        strike2_strangle_spread = strike2, strike3_spread = strike3)
+                    fig = graph.plot()  
+                    st.plotly_chart(fig)  
 
     elif model_selection == "Structured Products":
         st.header("Structured Products")
@@ -410,15 +417,17 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                                                 "forward_rate": forward_rate,
                                                 "domestic_rate": domestic_rate,}})
                 display_results(stress_test, s_t=True)
-                graph = GraphsStructuredProducts(graph_type=plot_type,
-                                                rate=rate, maturity=maturity, vol=volatility,
-                                                underlying = underlying, prod_type=struct_choice.lower(), 
-                                                strike=strike_price,
-                                                coupon_rate=coupon_rate, 
-                                                nb_coupon=nb_coupon,
-                                                nominal=nominal)
-                fig = graph.plot()  
-                st.plotly_chart(fig) 
+
+                if underlying in ["no dividend share","non capitalized index"]:
+                    graph = GraphsStructuredProducts(graph_type=plot_type,
+                                                    rate=rate, maturity=maturity, vol=volatility,
+                                                    underlying = underlying, prod_type=struct_choice.lower(), 
+                                                    strike=strike_price,
+                                                    coupon_rate=coupon_rate, 
+                                                    nb_coupon=nb_coupon,
+                                                    nominal=nominal)
+                    fig = graph.plot()  
+                    st.plotly_chart(fig) 
 
             elif struct_choice == "Certificat Outperformance":
                 certificat_outperformance = Run().certificat_outperformance(inputs={**inputs_dict, 
@@ -435,12 +444,14 @@ if model_selection in ["Vanilla Options", "Barrier Options", "Binary Options", "
                                                    "forward_rate": forward_rate,
                                                    "domestic_rate": domestic_rate,}})
                 display_results(stress_test, s_t=True)
-                graph = GraphsStructuredProducts(graph_type=plot_type,
-                                rate=rate, maturity=maturity, vol=volatility,
-                                underlying = underlying, prod_type=struct_choice.lower(), 
-                                strike=call_strike)
-                fig = graph.plot()  
-                st.plotly_chart(fig)  
+                
+                if underlying in ["no dividend share","non capitalized index"]:
+                    graph = GraphsStructuredProducts(graph_type=plot_type,
+                                    rate=rate, maturity=maturity, vol=volatility,
+                                    underlying = underlying, prod_type=struct_choice.lower(), 
+                                    strike=call_strike)
+                    fig = graph.plot()  
+                    st.plotly_chart(fig)  
             
 
 
