@@ -55,8 +55,10 @@ class GraphsOptions:
 
         if strike2_strangle_spread is not None and strike3_spread is not None:
             if strike >= strike2_strangle_spread or strike >= strike3_spread or strike2_strangle_spread >= strike3_spread:
-        # if strike >= strike2_strangle_spread or strike >= strike3_spread or strike2_strangle_spread >= strike3_spread:
                 raise Exception("Input error: Strikes must be as follow : strike < strike2 < strik3.")
+        
+        if underlying not in ["no dividend share","non capitalized index"]:
+            raise Exception("Not implemented")
 
         # Process creation
         self._rate = rate
